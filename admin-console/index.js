@@ -28,6 +28,7 @@ import {
 export default class AdminConsolePlugin {
   async init(ctx) {
     this.ctx = ctx;
+    this.disposed = false;
     await fs.mkdir(ctx.dataDir, { recursive: true });
     this.state = await createStateStore(ctx.dataDir);
     this.adminMetadata = new Map();
@@ -36,15 +37,31 @@ export default class AdminConsolePlugin {
     this.reconcileRunning = false;
     this.reconcilePromise = null;
     await this.refreshAdminMetadata();
-    setTimeout(() => {
+    this.reconcileTimer = setTimeout(() => {
       this.runReconcile().catch(() => {});
     }, 0);
     this.setupRouter(ctx.api);
   }
 
-  async dispose() {}
+  async dispose() {
+    this.disposed = true;
+    if (this.reconcileTimer) {
+      clearTimeout(this.reconcileTimer);
+      this.reconcileTimer = null;
+    }
+    if (this.reconcilePromise) {
+      await this.reconcilePromise.catch(() => {});
+    }
+    if (this.ctx?.api?.routes) {
+      this.ctx.api.routes = this.ctx.api.routes.filter(
+        (route) => route._adminConsole !== true,
+      );
+    }
+    this.adminMetadata.clear();
+  }
 
   async refreshAdminMetadata() {
+    if (this.disposed) return this.adminMetadata;
     this.adminMetadata = await collectAdminMetadata(
       this.ctx,
       async (pluginId, error) => {
@@ -58,6 +75,7 @@ export default class AdminConsolePlugin {
   }
 
   async runReconcile() {
+    if (this.disposed) return null;
     if (this.reconcileRunning) return this.reconcilePromise;
     this.reconcileRunning = true;
     this.reconcilePromise = (async () => {
@@ -77,12 +95,14 @@ export default class AdminConsolePlugin {
   }
 
   async runReconcileIfNeeded() {
+    if (this.disposed) return;
     await this.refreshAdminMetadata();
     await this.applyEnabledOverrides();
     if (this.reconcilePending) await this.runReconcile();
   }
 
   async applyEnabledOverrides() {
+    if (this.disposed) return;
     const overrides = this.state.getEnabledOverrides();
     for (const [id, enabled] of Object.entries(overrides)) {
       const plugin = this.ctx.registry.get(id);

@@ -8,7 +8,7 @@
         "wsUrl": { "type": "string", "default": "ws://127.0.0.1:3001", "title": "WS 地址" },
         "httpUrl": { "type": "string", "default": "http://127.0.0.1:3000", "title": "HTTP 地址" },
         "httpBasePath": { "type": "string", "default": "/", "title": "HTTP 基础路径" },
-        "autoConnect": { "type": "boolean", "default": false, "title": "自动连接" },
+        "autoConnect": { "type": "boolean", "default": true, "title": "自动连接" },
         "messageFormat": { "type": "string", "default": "array", "title": "消息格式" },
         "reconnectBaseMs": { "type": "integer", "default": 1000, "title": "重连基础间隔" },
         "reconnectMaxMs": { "type": "integer", "default": 30000, "title": "重连最大间隔" },

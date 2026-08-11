@@ -15,7 +15,7 @@ export default class ProtocolOnebotPlugin {
   async init(ctx) {
     this.ctx = ctx;
     this.config = await loadPluginConfig(ctx);
-    this.log = createPluginLogger(ctx);
+    this.log = await createPluginLogger(ctx);
     this.statusStore = new StatusStore();
     this.disposed = false;
     this.manualReconnect = false;

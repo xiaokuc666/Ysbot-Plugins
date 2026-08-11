@@ -1,9 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadPluginHarness } from "#test/plugin-harness.js";
+import { loadPluginHarness } from "../../test/plugin-harness.js";
 
 test("protocol-onebot loads and registers status routes", async () => {
-  const harness = await loadPluginHarness("protocol-onebot");
+  const harness = await loadPluginHarness("protocol-onebot", {
+    configOverrides: { autoConnect: false },
+  });
   try {
     const plugin = harness.registry.get("protocol-onebot");
     assert.ok(plugin);
@@ -20,7 +22,9 @@ test("protocol-onebot loads and registers status routes", async () => {
 });
 
 test("protocol-onebot rejects unsupported actions", async () => {
-  const harness = await loadPluginHarness("protocol-onebot");
+  const harness = await loadPluginHarness("protocol-onebot", {
+    configOverrides: { autoConnect: false },
+  });
   try {
     await assert.rejects(
       harness.registry.invoke("protocol-onebot", {
@@ -36,7 +40,9 @@ test("protocol-onebot rejects unsupported actions", async () => {
 });
 
 test("protocol-onebot status routes return status and html", async () => {
-  const harness = await loadPluginHarness("protocol-onebot");
+  const harness = await loadPluginHarness("protocol-onebot", {
+    configOverrides: { autoConnect: false },
+  });
   try {
     const status = { status: 0, data: null };
     await harness.apiRouter.dispatch(
@@ -60,7 +66,9 @@ test("protocol-onebot status routes return status and html", async () => {
 });
 
 test("protocol-onebot rejects sensitive action without admin", async () => {
-  const harness = await loadPluginHarness("protocol-onebot");
+  const harness = await loadPluginHarness("protocol-onebot", {
+    configOverrides: { autoConnect: false },
+  });
   try {
     const instance = harness.registry.get("protocol-onebot").instance;
     await assert.rejects(
@@ -80,7 +88,9 @@ test("protocol-onebot rejects sensitive action without admin", async () => {
 });
 
 test("protocol-onebot merges invoke call context", async () => {
-  const harness = await loadPluginHarness("protocol-onebot");
+  const harness = await loadPluginHarness("protocol-onebot", {
+    configOverrides: { autoConnect: false },
+  });
   try {
     const instance = harness.registry.get("protocol-onebot").instance;
     instance.httpClient.url = null;
@@ -100,7 +110,9 @@ test("protocol-onebot merges invoke call context", async () => {
 });
 
 test("protocol-onebot removes own routes on dispose", async () => {
-  const harness = await loadPluginHarness("protocol-onebot");
+  const harness = await loadPluginHarness("protocol-onebot", {
+    configOverrides: { autoConnect: false },
+  });
   try {
     const instance = harness.registry.get("protocol-onebot").instance;
     const before = harness.apiRouter.routes

@@ -13,6 +13,7 @@
 - `actor/scene` 输出
 - 动作白名单和敏感动作保护
 - admin-console 配置区和状态页
+- 插件日志写入 `ctx.dataDir/logs/`，支持按条数/大小轮转和读取备份
 
 ## 状态
 
@@ -31,6 +32,6 @@ v1.0.0
 ## 测试
 
 ```powershell
-npm run check
-npm test
+node tools/ysbot.js check protocol-onebot
+node tools/ysbot.js test protocol-onebot
 ```

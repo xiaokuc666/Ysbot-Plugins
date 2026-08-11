@@ -4,7 +4,7 @@ export const CONFIG_SCHEMA = {
     wsUrl: { type: "string", default: "ws://127.0.0.1:3001" },
     httpUrl: { type: "string", default: "http://127.0.0.1:3000" },
     httpBasePath: { type: "string", default: "/" },
-    autoConnect: { type: "boolean", default: false },
+    autoConnect: { type: "boolean", default: true },
     messageFormat: { type: "string", default: "array" },
     reconnectBaseMs: { type: "integer", default: 1000 },
     reconnectMaxMs: { type: "integer", default: 30000 },

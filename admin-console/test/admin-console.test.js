@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadPluginHarness } from "#test/plugin-harness.js";
+import { loadPluginHarness } from "../../test/plugin-harness.js";
 
 test("admin-console loads and registers management routes", async () => {
   const harness = await loadPluginHarness("admin-console");

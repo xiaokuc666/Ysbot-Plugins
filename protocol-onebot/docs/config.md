@@ -7,7 +7,7 @@
 | `wsUrl` | `ws://127.0.0.1:3001` | OneBot WS 地址 |
 | `httpUrl` | `http://127.0.0.1:3000` | OneBot HTTP 地址 |
 | `httpBasePath` | `/` | HTTP 基础路径 |
-| `autoConnect` | `false` | 启动后是否自动连接 |
+| `autoConnect` | `true` | 启动后是否自动连接 |
 | `messageFormat` | `array` | 消息格式 |
 | `reconnectBaseMs` | `1000` | 重连基础间隔 |
 | `reconnectMaxMs` | `30000` | 重连最大间隔 |

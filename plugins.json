@@ -11,7 +11,7 @@
       "adminConsole": true,
       "file": "admin-console/dist/admin-console-1.0.1.plg",
       "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/admin-console/dist/admin-console-1.0.1.plg",
-      "sha256": "e805eb3c123c93cac6876a4e2af124632914ed73b7ba94056ad420de48618dee"
+      "sha256": "ad7b9c5a04633f36aa134c4d4a2d8bbb212d2d2b43954023c1641197898729a5"
     },
     {
       "id": "protocol-onebot",
@@ -22,7 +22,7 @@
       "adminConsole": true,
       "file": "protocol-onebot/dist/protocol-onebot-1.0.0.plg",
       "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/protocol-onebot/dist/protocol-onebot-1.0.0.plg",
-      "sha256": "44d82c663ef4ff3ac131c6bc736888e90f93e10bed71fc6e70b47aa67a9a4364"
+      "sha256": "24d2ade3c618b37ca9ffd8b8a06476b5220e47cde9c4caf63b2cfc51a8db0dc4"
     }
   ]
 }

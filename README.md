@@ -6,6 +6,20 @@ YSbot 插件仓库。每个插件是一个独立顶层目录。
 
 插件下载索引：[plugins.json](plugins.json)
 
+## 快速开始
+
+仓库使用纯 Node 工具，不依赖 npm 包：
+
+```powershell
+node tools/ysbot.js list
+node tools/ysbot.js create capability my-plugin
+node tools/ysbot.js validate
+node tools/ysbot.js test
+node tools/ysbot.js pack
+```
+
+第一次执行需要 Core 时会自动克隆 `xiaokuc666/Ysbot-Core` 到 `ref/`。
+
 ## 当前插件
 
 | 插件 | 版本 | 说明 |
