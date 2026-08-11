@@ -1,0 +1,24 @@
+{
+  "id": "admin-console",
+  "type": "system",
+  "name": "Admin Console",
+  "version": "1.0.1",
+  "description": "YSbot plugin management API and admin UI",
+  "enabled": true,
+  "role": "admin",
+  "dependencies": [],
+  "permissions": {
+    "adminOnly": true,
+    "enabledGroups": []
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  }
+}

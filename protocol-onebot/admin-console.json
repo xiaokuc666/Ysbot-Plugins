@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "config": {
+    "title": "OneBot 协议配置",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "wsUrl": { "type": "string", "default": "ws://127.0.0.1:3001", "title": "WS 地址" },
+        "httpUrl": { "type": "string", "default": "http://127.0.0.1:3000", "title": "HTTP 地址" },
+        "httpBasePath": { "type": "string", "default": "/", "title": "HTTP 基础路径" },
+        "autoConnect": { "type": "boolean", "default": false, "title": "自动连接" },
+        "messageFormat": { "type": "string", "default": "array", "title": "消息格式" },
+        "reconnectBaseMs": { "type": "integer", "default": 1000, "title": "重连基础间隔" },
+        "reconnectMaxMs": { "type": "integer", "default": 30000, "title": "重连最大间隔" },
+        "requestTimeoutMs": { "type": "integer", "default": 10000, "title": "请求超时" },
+        "heartbeatTimeoutMs": { "type": "integer", "default": 30000, "title": "心跳超时" },
+        "allowedActions": { "type": "array", "default": [], "title": "允许动作" },
+        "allowUnknownActions": { "type": "boolean", "default": false, "title": "允许未知动作" },
+        "accessToken": { "type": "string", "secret": true, "title": "Access Token" }
+      }
+    },
+    "secrets": ["accessToken"]
+  },
+  "pages": [
+    {
+      "id": "status",
+      "title": "OneBot 连接状态",
+      "entry": "/api/plugins/protocol-onebot/admin/status",
+      "theme": "shared"
+    }
+  ]
+}

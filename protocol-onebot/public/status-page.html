@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/api/admin-console/design-tokens.css">
+  <style>
+    body { background: var(--ysbot-bg); color: var(--ysbot-text); font-family: var(--ysbot-font); padding: 24px; }
+    pre { background: var(--ysbot-surface); border: 1px solid var(--ysbot-border); border-radius: var(--ysbot-radius); padding: 16px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>OneBot 连接状态</h1>
+  <pre id="status">loading...</pre>
+  <button id="reconnect">应用配置并重连</button>
+  <script>
+    const token = window.__YSBOT_ADMIN_TOKEN__ || "";
+    const base = "/api/plugins/protocol-onebot/admin";
+    async function load() {
+      const res = await fetch(`${base}/status.json`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      document.querySelector("#status").textContent = JSON.stringify(data, null, 2);
+    }
+    document.querySelector("#reconnect").addEventListener("click", async () => {
+      await fetch(`${base}/reconnect`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: "{}"
+      });
+      await load();
+    });
+    load();
+  </script>
+</body>
+</html>

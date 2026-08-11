@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YSbot Admin Console</title>
+  <link rel="stylesheet" href="/api/admin-console/design-tokens.css">
+  <link rel="stylesheet" href="/api/admin-console/style.css">
+</head>
+<body>
+  <div id="app">
+    <section id="login" class="panel hidden">
+      <h1>YSbot Admin</h1>
+      <form id="login-form">
+        <label>用户名 <input id="username" autocomplete="username" required></label>
+        <label>密码 <input id="password" type="password" autocomplete="current-password" required></label>
+        <button type="submit">登录</button>
+      </form>
+    </section>
+
+    <div id="main" class="hidden">
+      <header class="topbar">
+        <strong>YSbot Admin Console</strong>
+        <button id="logout" class="ghost">退出</button>
+      </header>
+      <nav class="tabs" id="side-nav">
+        <div class="rail-brand">
+          <span class="rail-mark">YS</span>
+          <span class="rail-name">Admin</span>
+        </div>
+        <button data-view="overview" class="active">总览</button>
+        <button data-view="plugins">插件</button>
+        <button data-view="config">配置</button>
+        <button data-view="appearance">外观</button>
+        <div class="nav-group" id="special-nav">
+          <button data-view="pages">特殊页面</button>
+          <div class="rail-dropdown hidden" id="special-dropdown"></div>
+        </div>
+        <button data-view="logs">日志</button>
+      </nav>
+
+      <section id="view-overview" class="view">
+        <div id="overview"></div>
+      </section>
+
+      <section id="view-plugins" class="view hidden">
+        <div class="toolbar">
+          <input id="plugin-search" placeholder="搜索插件">
+          <button id="refresh-plugins" class="ghost">刷新</button>
+        </div>
+        <div class="split">
+          <div id="plugin-list"></div>
+          <div id="plugin-detail" class="detail"></div>
+        </div>
+        <div class="install-box">
+          <h2>安装插件</h2>
+          <input id="install-file" type="file" accept=".plg">
+          <button id="install-btn">安装 .plg</button>
+        </div>
+      </section>
+
+      <section id="view-config" class="view hidden">
+        <div class="split">
+          <div id="config-list"></div>
+          <div id="config-form" class="detail"></div>
+        </div>
+      </section>
+
+      <section id="view-appearance" class="view hidden">
+        <div class="split">
+          <div id="theme-presets" class="list-panel"></div>
+          <div id="theme-custom" class="detail"></div>
+        </div>
+      </section>
+
+      <section id="view-pages" class="view hidden">
+        <button id="back-to-pages" class="ghost page-back hidden">返回总页面</button>
+        <div id="page-frame" class="page-frame full hidden"></div>
+        <div id="page-picker" class="page-picker hidden">
+          <div class="toolbar">
+            <input id="page-search" placeholder="搜索特殊页面">
+            <button id="refresh-pages" class="ghost">刷新</button>
+            <button id="close-page-picker" class="ghost">关闭</button>
+          </div>
+          <div id="page-list"></div>
+        </div>
+      </section>
+
+      <section id="view-logs" class="view hidden">
+        <div class="toolbar">
+          <select id="log-level">
+            <option value="debug">debug</option>
+            <option value="info">info</option>
+            <option value="warn">warn</option>
+            <option value="error">error</option>
+          </select>
+          <input id="log-query" placeholder="搜索日志">
+          <button id="refresh-logs" class="ghost">刷新</button>
+          <button id="clear-logs" class="danger ghost">清空日志</button>
+        </div>
+        <div id="log-list"></div>
+      </section>
+    </div>
+  </div>
+  <ysbot-toast id="toast"></ysbot-toast>
+  <ysbot-modal id="confirm-modal"></ysbot-modal>
+  <script src="/api/admin-console/app.js"></script>
+</body>
+</html>

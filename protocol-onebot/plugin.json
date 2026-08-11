@@ -1,0 +1,22 @@
+{
+  "id": "protocol-onebot",
+  "type": "protocol",
+  "name": "OneBot Protocol",
+  "version": "1.0.0",
+  "description": "Generic OneBot v11 protocol plugin for YSbot Core",
+  "enabled": true,
+  "role": "protocol",
+  "dependencies": [],
+  "permissions": {
+    "adminOnly": false,
+    "enabledGroups": []
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {}
+  }
+}
