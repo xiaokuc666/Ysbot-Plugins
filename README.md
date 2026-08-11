@@ -4,6 +4,8 @@ YSbot 插件仓库。每个插件是一个独立顶层目录。
 
 该仓库所有插件基于 admin-console 开发，均通过 `admin-console.json` 接入参数配置和特殊页面。
 
+插件下载索引：[plugins.json](plugins.json)
+
 ## 当前插件
 
 | 插件 | 版本 | 说明 |

@@ -1,0 +1,28 @@
+{
+  "updatedAt": "2026-08-11",
+  "license": "MIT",
+  "plugins": [
+    {
+      "id": "admin-console",
+      "name": "Admin Console",
+      "version": "1.0.1",
+      "type": "system",
+      "description": "YSbot plugin management API and admin UI",
+      "adminConsole": true,
+      "file": "admin-console/dist/admin-console-1.0.1.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/admin-console/dist/admin-console-1.0.1.plg",
+      "sha256": "e805eb3c123c93cac6876a4e2af124632914ed73b7ba94056ad420de48618dee"
+    },
+    {
+      "id": "protocol-onebot",
+      "name": "OneBot Protocol",
+      "version": "1.0.0",
+      "type": "protocol",
+      "description": "Generic OneBot v11 protocol plugin for YSbot Core",
+      "adminConsole": true,
+      "file": "protocol-onebot/dist/protocol-onebot-1.0.0.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/protocol-onebot/dist/protocol-onebot-1.0.0.plg",
+      "sha256": "44d82c663ef4ff3ac131c6bc736888e90f93e10bed71fc6e70b47aa67a9a4364"
+    }
+  ]
+}
