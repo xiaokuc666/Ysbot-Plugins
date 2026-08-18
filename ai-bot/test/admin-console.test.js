@@ -15,5 +15,9 @@ test("admin-console.json declares ai-bot config", async () => {
   assert.equal(config.version, 1);
   assert.equal(config.config.schema.properties.defaultReplyMode.default, "mention");
   assert.equal(config.config.schema.properties.adminUserIds.type, "array");
+  assert.equal(
+    config.config.schema.properties.curiosityEnabled.type,
+    "boolean",
+  );
   assert.equal(config.pages.length, 0);
 });

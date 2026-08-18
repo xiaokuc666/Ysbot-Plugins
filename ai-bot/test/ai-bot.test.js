@@ -85,6 +85,27 @@ function installFakes(harness) {
   return calls;
 }
 
+function installMemoryStore(harness, calls) {
+  harness.registry.unregister("memory-store");
+  harness.registry.register({
+    id: "memory-store",
+    type: "capability",
+    name: "Fake Memory",
+    version: "0.1.0",
+    enabled: true,
+    status: "ready",
+    manifest: { id: "memory-store", dependencies: [] },
+    async invoke(params) {
+      calls.push({ kind: "memory", params });
+      if (params.action === "recall") {
+        return { ok: true, data: { entries: [{ text: "旧的群聊记忆" }] } };
+      }
+      return { ok: true, data: {} };
+    },
+    async dispose() {},
+  });
+}
+
 test("ai-bot registers log source", async (t) => {
   const harness = await makeHarness(t);
   assert.ok(harness.logging.list().some((source) => source.id === "ai-bot"));
@@ -190,4 +211,93 @@ test("non-admin private command is rejected", async (t) => {
   assert.deepEqual(config.enabledGroups, []);
   const send = calls.find((call) => call.kind === "action");
   assert.equal(send.params.params.user_id, "999999");
+});
+
+test("curiosity direct interaction replies through decision handler", async (t) => {
+  const harness = await makeHarness(t, {
+    defaultEnabled: true,
+    curiosityEnabled: true,
+    curiosityMemoryEnabled: false,
+    curiosityRandomReplyProbability: 0,
+    curiosityDirectCooldownMs: 60000,
+  });
+  const calls = installFakes(harness);
+
+  harness.eventBus.emit("onebot.message", {
+    message_type: "group",
+    group_id: "100000001",
+    user_id: "200000001",
+    sender: { role: "member" },
+    message: [
+      { type: "at", data: { qq: "bot" } },
+      { type: "text", data: { text: "你好" } },
+    ],
+    raw_message: "@bot 你好",
+  });
+
+  await waitFor(() => calls.some((call) => call.kind === "action"));
+  assert.ok(calls.some((call) => call.kind === "llm"));
+  const send = calls.find((call) => call.kind === "action");
+  assert.equal(send.params.action, "send_group_msg");
+});
+
+test("curiosity shouldAct false writes observation to memory-store", async (t) => {
+  const harness = await makeHarness(t, {
+    defaultEnabled: true,
+    curiosityEnabled: true,
+    curiosityMemoryEnabled: true,
+    curiosityRandomReplyProbability: 0,
+  });
+  const calls = installFakes(harness);
+  installMemoryStore(harness, calls);
+
+  harness.eventBus.emit("onebot.message", {
+    message_type: "group",
+    group_id: "100000001",
+    user_id: "200000001",
+    sender: { role: "member" },
+    message: [{ type: "text", data: { text: "普通消息" } }],
+    raw_message: "普通消息",
+  });
+
+  await waitFor(() => calls.some((call) => call.kind === "memory"));
+  const memoryCall = calls.find((call) => call.kind === "memory");
+  assert.equal(memoryCall.params.action, "observe");
+});
+
+test("curiosity cooldown suppresses repeated direct reply", async (t) => {
+  const harness = await makeHarness(t, {
+    defaultEnabled: true,
+    curiosityEnabled: true,
+    curiosityMemoryEnabled: false,
+    curiosityRandomReplyProbability: 0,
+    curiosityDirectCooldownMs: 60000,
+  });
+  const calls = installFakes(harness);
+
+  const emitDirect = () => {
+    harness.eventBus.emit("onebot.message", {
+      message_type: "group",
+      group_id: "100000001",
+      user_id: "200000001",
+      sender: { role: "member" },
+      message: [{ type: "at", data: { qq: "bot" } }],
+      raw_message: "@bot",
+    });
+  };
+  emitDirect();
+  await waitFor(
+    () =>
+      calls.filter(
+        (call) =>
+          call.kind === "action" && call.params.action === "send_group_msg",
+      ).length === 1,
+  );
+  emitDirect();
+  await delay(120);
+  const sends = calls.filter(
+    (call) =>
+      call.kind === "action" && call.params.action === "send_group_msg",
+  );
+  assert.equal(sends.length, 1);
 });

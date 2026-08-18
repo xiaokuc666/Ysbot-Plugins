@@ -16,6 +16,8 @@ export default class AiBotPlugin {
     this.config = await loadPluginConfig(ctx);
     this.log = await createPluginLogger(ctx);
     this.cooldowns = new Map();
+    this.seenGroups = new Set();
+    this.periodicTimer = null;
     this.unsubscribe = ctx.eventBus.on("onebot.message", (event) => {
       this.handleMessage(event).catch((error) => {
         this.log.warn("ai", `event handling failed: ${error.message}`, {
@@ -23,6 +25,27 @@ export default class AiBotPlugin {
         });
       });
     });
+    this.unsubscribeMotivation = ctx.eventBus.on(
+      "curiosity.motivation",
+      (motivation) => {
+        this.handleCuriosityMotivation(motivation).catch((error) => {
+          this.log.warn("ai", `curiosity motivation failed: ${error.message}`, {
+            traceId: motivation?.payload?.traceId || null,
+          });
+        });
+      },
+    );
+    this.unsubscribeDecision = ctx.eventBus.on(
+      "curiosity.decision",
+      (decision) => {
+        this.handleCuriosityDecision(decision).catch((error) => {
+          this.log.warn("ai", `curiosity decision failed: ${error.message}`, {
+            traceId: decision?.motivation?.payload?.traceId || null,
+          });
+        });
+      },
+    );
+    this.schedulePeriodicProbe();
   }
 
   async handleMessage(event) {
@@ -47,8 +70,13 @@ export default class AiBotPlugin {
 
     const groupId = String(event.group_id || "");
     if (!groupId) return;
+    this.seenGroups.add(groupId);
     if (!groupEnabled(config, groupId)) {
       this.log.debug("ai", "group disabled", { traceId, groupId });
+      return;
+    }
+    if (config.curiosityEnabled && this.ctx.curiosity) {
+      await this.submitCuriosity(event, config, traceId);
       return;
     }
     if (
@@ -115,6 +143,251 @@ export default class AiBotPlugin {
       },
       traceId,
     };
+  }
+
+  async submitCuriosity(event, config, traceId) {
+    const isDirect = this.isMentioned(event);
+    const type = isDirect ? "direct_interaction" : "group_active";
+    const cooldownMs = isDirect
+      ? config.curiosityDirectCooldownMs
+      : config.curiosityGroupActiveCooldownMs;
+    const shouldAct =
+      isDirect ||
+      Math.random() < Number(config.curiosityRandomReplyProbability || 0);
+    const motivation = {
+      type,
+      groupId: String(event.group_id),
+      cooldownMs,
+      shouldAct,
+      payload: { event, traceId },
+    };
+    this.log.debug("ai", "curiosity submit", {
+      traceId,
+      groupId: motivation.groupId,
+      type,
+      shouldAct,
+      cooldownMs,
+    });
+    const decision = await this.ctx.curiosity.submit(motivation);
+    if (!decision) {
+      this.log.debug("ai", "curiosity cooldown hit", {
+        traceId,
+        groupId: motivation.groupId,
+        type,
+      });
+    }
+    return decision;
+  }
+
+  async handleCuriosityMotivation(motivation) {
+    if (!motivation) return;
+    this.log.debug("ai", "curiosity motivation", {
+      traceId: motivation.payload?.traceId || null,
+      groupId: motivation.groupId || null,
+      type: motivation.type || null,
+      shouldAct: motivation.shouldAct,
+    });
+  }
+
+  async handleCuriosityDecision(decision) {
+    if (!decision?.motivation) return;
+    const config = await loadPluginConfig(this.ctx);
+    if (!config.curiosityEnabled) return;
+    const motivation = decision.motivation;
+    const traceId = motivation.payload?.traceId || generateTraceId();
+    this.log.info("ai", "curiosity decision", {
+      traceId,
+      groupId: motivation.groupId || null,
+      type: motivation.type || null,
+      shouldAct: decision.shouldAct,
+    });
+    if (!decision.shouldAct) {
+      await this.observeMemory(motivation, traceId);
+      return;
+    }
+    const memory = await this.recallMemory(motivation, traceId);
+    await this.replyFromMotivation(motivation, config, traceId, memory);
+  }
+
+  async observeMemory(motivation, traceId) {
+    const config = await loadPluginConfig(this.ctx);
+    if (!config.curiosityMemoryEnabled) return;
+    if (!this.hasPlugin("memory-store")) {
+      this.log.debug("ai", "memory-store not installed; observe skipped", {
+        traceId,
+      });
+      return;
+    }
+    try {
+      await this.ctx.registry.invoke("memory-store", {
+        action: "observe",
+        params: { event: motivation.payload?.event || null },
+        context: { traceId },
+      });
+      this.log.info("ai", "memory observe written", { traceId });
+    } catch (error) {
+      this.log.warn("ai", `memory observe failed: ${error.message}`, {
+        traceId,
+      });
+    }
+  }
+
+  async recallMemory(motivation, traceId) {
+    const config = await loadPluginConfig(this.ctx);
+    if (!config.curiosityMemoryEnabled || !this.hasPlugin("memory-store")) {
+      return null;
+    }
+    try {
+      const result = await this.ctx.registry.invoke("memory-store", {
+        action: "recall",
+        params: {
+          sceneType: "group",
+          sceneId: motivation.groupId || "",
+          limit: 10,
+        },
+        context: { traceId },
+      });
+      return (
+        result?.data?.entries ||
+        result?.data?.memory ||
+        result?.data ||
+        null
+      );
+    } catch (error) {
+      this.log.warn("ai", `memory recall failed: ${error.message}`, {
+        traceId,
+      });
+      return null;
+    }
+  }
+
+  formatMemory(memory) {
+    if (typeof memory === "string") return memory;
+    if (Array.isArray(memory)) {
+      return memory
+        .map((entry) => {
+          if (!entry) return "";
+          return entry.text || entry.content || JSON.stringify(entry);
+        })
+        .filter(Boolean)
+        .join("\n");
+    }
+    return JSON.stringify(memory);
+  }
+
+  hasPlugin(id) {
+    const plugin = this.ctx.registry.get(id);
+    return Boolean(plugin && plugin.enabled !== false && plugin.status === "ready");
+  }
+
+  async replyFromMotivation(motivation, config, traceId, memory) {
+    const event = motivation.payload?.event || {};
+    const text = this.extractText(event);
+    const messages = [{ role: "system", content: config.systemPrompt || "" }];
+    if (memory) {
+      messages.push({
+        role: "system",
+        content: `近期记忆：\n${this.formatMemory(memory)}`,
+      });
+    }
+    messages.push({
+      role: "user",
+      content: text || "请根据当前群聊动态给出一个简短自然的回应。",
+    });
+    const llmResult = await this.ctx.registry.invoke("llm-bridge", {
+      action: "chat",
+      params: {
+        messages,
+        temperature: 0.8,
+        max_tokens: 512,
+        ...(config.llmProvider ? { provider: config.llmProvider } : {}),
+        ...(config.llmModel ? { model: config.llmModel } : {}),
+      },
+      context: {
+        actor: { origin: "system", id: "ai-bot", admin: true, roles: ["admin"] },
+        scene: { type: "group", id: String(motivation.groupId || "") },
+        traceId,
+      },
+    });
+    const rawReply =
+      llmResult?.data?.choices?.[0]?.message?.content ||
+      llmResult?.data?.choices?.[0]?.text ||
+      "";
+    const reply = String(rawReply || "").trim();
+    if (!reply) {
+      this.log.info("ai", "empty curiosity reply", { traceId });
+      return;
+    }
+    const limited = reply.slice(0, config.maxReplyLength || 2000);
+    await this.ctx.registry.invoke("action-qq", {
+      action: "send_group_msg",
+      params: {
+        group_id: String(motivation.groupId || ""),
+        message: [{ type: "text", data: { text: limited } }],
+      },
+      context: this.actionContext("group", motivation.groupId || "", traceId),
+    });
+    this.log.info("ai", "curiosity reply sent", {
+      traceId,
+      groupId: motivation.groupId || null,
+      type: motivation.type || null,
+      length: limited.length,
+    });
+  }
+
+  async schedulePeriodicProbe() {
+    if (this.disposed) return;
+    const config = await loadPluginConfig(this.ctx);
+    const enabled =
+      config.curiosityEnabled &&
+      config.curiosityPeriodicProbeEnabled &&
+      Boolean(this.ctx.curiosity);
+    const interval = enabled
+      ? Math.max(
+          10000,
+          Number(config.curiosityPeriodicProbeIntervalMs) || 300000,
+        )
+      : 60000;
+    this.periodicTimer = setTimeout(async () => {
+      try {
+        if (enabled) await this.runPeriodicProbe();
+      } catch (error) {
+        this.log.warn("ai", `periodic probe failed: ${error.message}`);
+      } finally {
+        this.schedulePeriodicProbe();
+      }
+    }, interval);
+  }
+
+  async runPeriodicProbe() {
+    if (this.disposed) return;
+    const config = await loadPluginConfig(this.ctx);
+    if (
+      !config.curiosityEnabled ||
+      !config.curiosityPeriodicProbeEnabled ||
+      !this.ctx.curiosity
+    ) {
+      return;
+    }
+    const groups = new Set([
+      ...(config.enabledGroups || []).map(String),
+      ...this.seenGroups,
+    ]);
+    const interval =
+      config.curiosityPeriodicProbeIntervalMs || 300000;
+    for (const groupId of groups) {
+      if (!groupEnabled(config, groupId)) continue;
+      const shouldAct =
+        Math.random() <
+        Number(config.curiosityPeriodicProbeProbability || 0);
+      await this.ctx.curiosity.submit({
+        type: "periodic_probe",
+        groupId,
+        cooldownMs: interval,
+        shouldAct,
+        payload: { traceId: generateTraceId(), source: "periodic" },
+      });
+    }
   }
 
   async replyToMessage(event, config, traceId) {
@@ -304,9 +577,21 @@ export default class AiBotPlugin {
 
   async dispose() {
     this.disposed = true;
+    if (this.periodicTimer) {
+      clearTimeout(this.periodicTimer);
+      this.periodicTimer = null;
+    }
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
+    }
+    if (this.unsubscribeMotivation) {
+      this.unsubscribeMotivation();
+      this.unsubscribeMotivation = null;
+    }
+    if (this.unsubscribeDecision) {
+      this.unsubscribeDecision();
+      this.unsubscribeDecision = null;
     }
     this.log.info("index", "disposed");
     await this.log.flush();

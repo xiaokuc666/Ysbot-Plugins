@@ -104,6 +104,10 @@ export async function loadPluginHarness(pluginId, options = {}) {
     coreDir,
     "src/core/protocol-bridge.js",
   );
+  const { CuriosityBus } = await importCoreModule(
+    coreDir,
+    "src/core/curiosity.js",
+  );
 
   const eventBus = new EventBus();
   const runtime = new FrameworkRuntime(
@@ -112,6 +116,11 @@ export async function loadPluginHarness(pluginId, options = {}) {
   await runtime.init();
   const taskStore = new TaskStore(path.join(stateDir, "tasks.json"));
   await taskStore.init();
+  const curiosity = new CuriosityBus({
+    eventBus,
+    stateFile: path.join(stateDir, "curiosity.json"),
+  });
+  await curiosity.init();
   const apiRouter = new ApiRouter();
   const protocolBridge = new ProtocolBridge();
   const scheduler = new Scheduler({
@@ -185,6 +194,7 @@ export async function loadPluginHarness(pluginId, options = {}) {
         api: apiRouter,
         pluginManager: manager,
         protocol: protocolBridge,
+        curiosity,
         logging,
         pluginDir: path.join(runtimePluginDir, manifest.id),
         cacheDir: null,
@@ -228,6 +238,7 @@ export async function loadPluginHarness(pluginId, options = {}) {
     scheduler,
     runtime,
     secrets,
+    curiosity,
     logging,
     async invoke(params, context = {}) {
       return registry.invoke(pluginId, params, context);

@@ -20,6 +20,14 @@ export const CONFIG_SCHEMA = {
     maxReplyLength: { type: "integer", default: 2000 },
     llmProvider: { type: "string", default: "" },
     llmModel: { type: "string", default: "" },
+    curiosityEnabled: { type: "boolean", default: false },
+    curiosityMemoryEnabled: { type: "boolean", default: true },
+    curiosityDirectCooldownMs: { type: "integer", default: 15000 },
+    curiosityGroupActiveCooldownMs: { type: "integer", default: 60000 },
+    curiosityPeriodicProbeEnabled: { type: "boolean", default: false },
+    curiosityPeriodicProbeIntervalMs: { type: "integer", default: 300000 },
+    curiosityPeriodicProbeProbability: { type: "number", default: 0.1 },
+    curiosityRandomReplyProbability: { type: "number", default: 0.05 },
   },
 };
 

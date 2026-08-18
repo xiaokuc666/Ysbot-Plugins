@@ -6,6 +6,15 @@ test("CONFIG_SCHEMA exposes ai-bot defaults", () => {
   assert.equal(CONFIG_SCHEMA.properties.defaultEnabled.default, false);
   assert.equal(CONFIG_SCHEMA.properties.defaultReplyMode.default, "mention");
   assert.equal(CONFIG_SCHEMA.properties.cooldownSeconds.default, 3);
+  assert.equal(CONFIG_SCHEMA.properties.curiosityEnabled.default, false);
+  assert.equal(
+    CONFIG_SCHEMA.properties.curiosityDirectCooldownMs.default,
+    15000,
+  );
+  assert.equal(
+    CONFIG_SCHEMA.properties.curiosityGroupActiveCooldownMs.default,
+    60000,
+  );
 });
 
 test("groupEnabled respects explicit disabled and enabled groups", () => {

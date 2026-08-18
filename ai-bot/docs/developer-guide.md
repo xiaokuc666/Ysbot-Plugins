@@ -37,6 +37,44 @@ onebot.message
 disabledGroups > enabledGroups > defaultEnabled
 ```
 
+## CuriosityBus 接入
+
+ai-bot 使用 Core 注入的 `ctx.curiosity`：
+
+```js
+await ctx.curiosity.submit({
+  type: "direct_interaction",
+  groupId: "100000001",
+  cooldownMs: 15000,
+  shouldAct: true,
+  payload: { event, traceId }
+});
+```
+
+监听事件：
+
+```text
+curiosity.motivation
+curiosity.decision
+```
+
+动机类型：
+
+```text
+direct_interaction
+group_active
+periodic_probe
+memory_update
+```
+
+决策处理：
+
+- `shouldAct=true`：调用 llm-bridge 生成回复，再通过 action-qq 发送
+- `shouldAct=false`：如果安装了 memory-store，调用 `observe` 写入观察结果
+- 回复前如果安装了 memory-store，会调用 `recall` 获取近期记忆并注入 prompt
+
+memory-store 未安装时不会报错，会跳过记忆相关调用。
+
 ## 管理员私聊指令
 
 只有 `adminUserIds` 中的 QQ 可以执行：

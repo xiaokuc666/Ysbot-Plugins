@@ -5,7 +5,7 @@ QQ AI 聊天机器人业务插件，负责接收消息、决定是否回复、�
 - ID: `ai-bot`
 - Type: `capability`
 - Role: `capability`
-- Version: `0.1.0`
+- Version: `0.2.0`
 - 依赖: `protocol-onebot >= 1.0.0`、`action-qq >= 1.0.0`、`llm-bridge >= 0.1.0`
 
 ## 功能
@@ -14,6 +14,8 @@ QQ AI 聊天机器人业务插件，负责接收消息、决定是否回复、�
 - 支持 @、回复、普通消息
 - 每群启用/禁用
 - 管理员私聊指令
+- 接入 Core CuriosityBus，支持直接互动、群活跃观察、定时群探针
+- 通过 memory-store 接口做记忆观察和回忆（插件未安装时自动跳过）
 - 日志 traceId 贯穿全链路
 
 ## 配置
@@ -33,6 +35,23 @@ QQ AI 聊天机器人业务插件，负责接收消息、决定是否回复、�
 | `systemPrompt` | 默认提示词 | LLM 系统提示词 |
 | `llmProvider` | 空 | 可覆盖 llm-bridge Provider |
 | `llmModel` | 空 | 可覆盖模型 |
+| `curiosityEnabled` | `false` | 是否启用好奇心总线 |
+| `curiosityMemoryEnabled` | `true` | 是否启用记忆联动 |
+| `curiosityDirectCooldownMs` | `15000` | 直接互动冷却 |
+| `curiosityGroupActiveCooldownMs` | `60000` | 群活跃冷却 |
+| `curiosityPeriodicProbeEnabled` | `false` | 是否启用定时群探针 |
+| `curiosityPeriodicProbeIntervalMs` | `300000` | 定时探针间隔 |
+| `curiosityPeriodicProbeProbability` | `0.1` | 定时探针参与概率 |
+| `curiosityRandomReplyProbability` | `0.05` | 群活跃随机回复概率 |
+
+## 好奇心总线
+
+- `direct_interaction`：有人 @ 或回复 bot 时强制看一眼
+- `group_active`：群里正在聊天时低概率观察或插话
+- `periodic_probe`：定时查看已出现过的群
+- `memory_update`：只更新记忆，不回复
+
+未启用好奇心的群不会提交动机。`shouldAct=false` 的观察结果会尝试写入 `memory-store`。
 
 ## 管理员私聊指令
 

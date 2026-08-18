@@ -78,6 +78,56 @@
           "type": "string",
           "default": "",
           "title": "LLM 模型"
+        },
+        "curiosityEnabled": {
+          "type": "boolean",
+          "default": false,
+          "title": "启用好奇心总线"
+        },
+        "curiosityMemoryEnabled": {
+          "type": "boolean",
+          "default": true,
+          "title": "启用记忆联动"
+        },
+        "curiosityDirectCooldownMs": {
+          "type": "integer",
+          "default": 15000,
+          "minimum": 1000,
+          "maximum": 3600000,
+          "title": "直接互动冷却"
+        },
+        "curiosityGroupActiveCooldownMs": {
+          "type": "integer",
+          "default": 60000,
+          "minimum": 1000,
+          "maximum": 3600000,
+          "title": "群活跃冷却"
+        },
+        "curiosityPeriodicProbeEnabled": {
+          "type": "boolean",
+          "default": false,
+          "title": "启用定时群探针"
+        },
+        "curiosityPeriodicProbeIntervalMs": {
+          "type": "integer",
+          "default": 300000,
+          "minimum": 10000,
+          "maximum": 86400000,
+          "title": "定时探针间隔"
+        },
+        "curiosityPeriodicProbeProbability": {
+          "type": "number",
+          "default": 0.1,
+          "minimum": 0,
+          "maximum": 1,
+          "title": "定时探针参与概率"
+        },
+        "curiosityRandomReplyProbability": {
+          "type": "number",
+          "default": 0.05,
+          "minimum": 0,
+          "maximum": 1,
+          "title": "群活跃随机回复概率"
         }
       }
     },
