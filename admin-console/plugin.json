@@ -2,7 +2,7 @@
   "id": "admin-console",
   "type": "system",
   "name": "Admin Console",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "YSbot plugin management API and admin UI",
   "enabled": true,
   "role": "admin",

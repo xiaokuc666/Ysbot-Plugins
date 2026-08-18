@@ -383,8 +383,10 @@ async function loadPlugins() {
     const data = await api("/api/plugins");
     state.plugins = data.plugins || [];
     renderPluginList();
+    return true;
   } catch (error) {
     list.innerHTML = `<div class="error-text">${escapeHtml(error.message)}</div>`;
+    return false;
   }
 }
 
@@ -865,8 +867,10 @@ async function loadPages() {
     } else {
       showPagePicker();
     }
+    return true;
   } catch (error) {
     list.innerHTML = `<div class="error-text">${escapeHtml(error.message)}</div>`;
+    return false;
   }
 }
 
@@ -960,8 +964,10 @@ async function loadLogs() {
       </div>`;
     }).join("");
     box.innerHTML = rows || '<div class="muted">无日志</div>';
+    return true;
   } catch (error) {
     box.innerHTML = `<div class="error-text">${escapeHtml(error.message)}</div>`;
+    return false;
   }
 }
 
@@ -995,6 +1001,7 @@ function bindEvents() {
       });
       state.token = data.token;
       sessionStorage.setItem("ysbot-admin-token", data.token);
+      showToast("登录成功", "ok");
       showMain();
       switchView("overview");
     } catch (error) {
@@ -1013,13 +1020,22 @@ function bindEvents() {
   });
 
   $("#plugin-search").addEventListener("input", renderPluginList);
-  $("#refresh-plugins").addEventListener("click", loadPlugins);
+  $("#refresh-plugins").addEventListener("click", async () => {
+    const ok = await loadPlugins();
+    showToast(ok ? "插件列表已刷新" : "刷新失败", ok ? "ok" : "error");
+  });
   $("#install-btn").addEventListener("click", installPlugin);
-  $("#refresh-logs").addEventListener("click", loadLogs);
+  $("#refresh-logs").addEventListener("click", async () => {
+    const ok = await loadLogs();
+    showToast(ok ? "日志已刷新" : "刷新失败", ok ? "ok" : "error");
+  });
   $("#log-level").addEventListener("change", loadLogs);
   $("#log-query").addEventListener("change", loadLogs);
   $("#page-search").addEventListener("input", renderPages);
-  $("#refresh-pages").addEventListener("click", loadPages);
+  $("#refresh-pages").addEventListener("click", async () => {
+    const ok = await loadPages();
+    showToast(ok ? "特殊页面已刷新" : "刷新失败", ok ? "ok" : "error");
+  });
   $("#close-page-picker").addEventListener("click", hidePagePicker);
   $("#back-to-pages").addEventListener("click", exitSpecialPage);
   $("#clear-logs").addEventListener("click", async () => {

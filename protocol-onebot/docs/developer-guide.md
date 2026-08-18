@@ -8,7 +8,7 @@
 
 ## 调用入口
 
-v1.0.0 使用：
+v1.0.1 使用：
 
 ```js
 await ctx.registry.invoke("protocol-onebot", {
@@ -125,6 +125,16 @@ onebot.status
 send_group_msg
 send_private_msg
 delete_msg
+send_group_forward_msg
+set_group_card
+set_group_name
+set_group_ban
+set_group_whole_ban
+set_group_kick
+set_group_admin
+set_group_special_title
+set_friend_add_request
+set_group_add_request
 get_login_info
 get_group_list
 get_friend_list
@@ -138,7 +148,7 @@ get_group_member_list
 
 发送动作要求 `actor/scene`。
 
-`delete_msg` 要求：
+`delete_msg` 和群管理动作要求：
 
 - `context.actor.admin === true`
 - 或 `context.approved === true`

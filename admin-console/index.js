@@ -41,6 +41,11 @@ export default class AdminConsolePlugin {
       this.runReconcile().catch(() => {});
     }, 0);
     this.setupRouter(ctx.api);
+    const host = ctx.config?.managementHost || "127.0.0.1";
+    const port = ctx.config?.managementPort || 5178;
+    ctx.logger?.info(
+      `[AdminConsole] Admin Console: http://${host}:${port}/api/admin-console/ui`,
+    );
   }
 
   async dispose() {

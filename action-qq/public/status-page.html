@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/api/admin-console/design-tokens.css">
+  <style>
+    body { background: var(--ysbot-bg); color: var(--ysbot-text); font-family: var(--ysbot-font); padding: 24px; }
+    pre { background: var(--ysbot-surface); border: 1px solid var(--ysbot-border); border-radius: var(--ysbot-radius); padding: 16px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>QQ 动作状态</h1>
+  <pre id="status">loading...</pre>
+  <script>
+    const token = window.__YSBOT_ADMIN_TOKEN__ || "";
+    async function load() {
+      const response = await fetch("/api/plugins/action-qq/admin/status.json", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      document.querySelector("#status").textContent = JSON.stringify(data, null, 2);
+    }
+    load();
+  </script>
+</body>
+</html>

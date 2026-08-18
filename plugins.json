@@ -1,28 +1,39 @@
 {
-  "updatedAt": "2026-08-11",
+  "updatedAt": "2026-08-18",
   "license": "MIT",
   "plugins": [
     {
       "id": "admin-console",
       "name": "Admin Console",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "type": "system",
       "description": "YSbot plugin management API and admin UI",
       "adminConsole": true,
-      "file": "admin-console/dist/admin-console-1.0.1.plg",
-      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/admin-console/dist/admin-console-1.0.1.plg",
-      "sha256": "ad7b9c5a04633f36aa134c4d4a2d8bbb212d2d2b43954023c1641197898729a5"
+      "file": "admin-console/dist/admin-console-1.0.2.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/admin-console/dist/admin-console-1.0.2.plg",
+      "sha256": "21316b3f8e91646280c70fc673c2e7ad046f7de64ed40a88b58d3ffb96fd3b2d"
     },
     {
       "id": "protocol-onebot",
       "name": "OneBot Protocol",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "type": "protocol",
       "description": "Generic OneBot v11 protocol plugin for YSbot Core",
       "adminConsole": true,
-      "file": "protocol-onebot/dist/protocol-onebot-1.0.0.plg",
-      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/protocol-onebot/dist/protocol-onebot-1.0.0.plg",
-      "sha256": "24d2ade3c618b37ca9ffd8b8a06476b5220e47cde9c4caf63b2cfc51a8db0dc4"
+      "file": "protocol-onebot/dist/protocol-onebot-1.0.1.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/protocol-onebot/dist/protocol-onebot-1.0.1.plg",
+      "sha256": "92903ff31a1fe12cc4c1646ac108af24f371029e52600e78fc937e92270a8b99"
+    },
+    {
+      "id": "action-qq",
+      "name": "QQ Action",
+      "version": "1.0.0",
+      "type": "action",
+      "description": "Generic QQ action layer based on OneBot v11",
+      "adminConsole": true,
+      "file": "action-qq/dist/action-qq-1.0.0.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/action-qq/dist/action-qq-1.0.0.plg",
+      "sha256": "261718eb81f555569580795886219a376ed1e603a6aa96bd223bc51914e98e2b"
     }
   ]
 }

@@ -1,12 +1,14 @@
 {
-  "id": "protocol-onebot",
-  "type": "protocol",
-  "name": "OneBot Protocol",
-  "version": "1.0.1",
-  "description": "Generic OneBot v11 protocol plugin for YSbot Core",
+  "id": "action-qq",
+  "type": "action",
+  "name": "QQ Action",
+  "version": "1.0.0",
+  "description": "Generic QQ action layer based on OneBot v11",
   "enabled": true,
-  "role": "protocol",
-  "dependencies": [],
+  "role": "action",
+  "dependencies": [
+    "protocol-onebot"
+  ],
   "permissions": {
     "adminOnly": false,
     "enabledGroups": []

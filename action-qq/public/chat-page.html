@@ -1,0 +1,1249 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/api/admin-console/design-tokens.css">
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    button {
+      transition: filter 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
+    }
+    button:hover {
+      filter: brightness(1.06);
+    }
+    button:active {
+      transform: scale(0.97);
+      opacity: 0.85;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    body {
+      margin: 0;
+      background: var(--ysbot-bg);
+      color: var(--ysbot-text);
+      font-family: var(--ysbot-font);
+      height: 100vh;
+      overflow: hidden;
+    }
+    .chat-shell {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      height: 100%;
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius);
+      overflow: hidden;
+    }
+    .scene-list {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: var(--ysbot-surface);
+      border-right: 1px solid var(--ysbot-border);
+    }
+    .scene-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 14px 16px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--ysbot-border);
+    }
+    .scene-head button {
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius);
+      background: var(--ysbot-bg);
+      color: var(--ysbot-text);
+      padding: 4px 8px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+    }
+    #contacts {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .category {
+      border-bottom: 1px solid var(--ysbot-border);
+    }
+    .category-head {
+      width: 100%;
+      padding: 10px 14px;
+      border: 0;
+      background: transparent;
+      color: var(--ysbot-text);
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .category-head .count {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+    .category-body {
+      display: none;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .category-body.open {
+      display: block;
+    }
+    .contact-item {
+      width: 100%;
+      padding: 10px 14px 10px 24px;
+      border: 0;
+      border-top: 1px solid var(--ysbot-border);
+      background: transparent;
+      color: var(--ysbot-text);
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+    }
+    .contact-item.active {
+      background: var(--ysbot-primary);
+      color: #fff;
+    }
+    .contact-title {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .contact-sub {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      opacity: 0.72;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .chat-main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      background: var(--ysbot-bg);
+    }
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 72px 80px 8px 16px;
+      border-bottom: 1px solid var(--ysbot-border);
+    }
+    .chat-title {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chat-tools {
+      display: flex;
+      gap: 8px;
+      flex: none;
+    }
+    .chat-tools button {
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius);
+      background: var(--ysbot-surface);
+      color: var(--ysbot-text);
+      padding: 5px 10px;
+      cursor: pointer;
+      font: inherit;
+    }
+    .manager-view {
+      display: none;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      background: var(--ysbot-bg);
+      grid-column: 2;
+      grid-row: 1;
+    }
+    .manager-view.active {
+      display: flex;
+    }
+    .manager-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--ysbot-border);
+    }
+    .manager-tabs button {
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius);
+      background: var(--ysbot-surface);
+      color: var(--ysbot-text);
+      padding: 7px 14px;
+      cursor: pointer;
+      font: inherit;
+    }
+    .manager-tabs button.active {
+      background: var(--ysbot-primary);
+      color: #fff;
+    }
+    .manager-panel {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .manager-toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .manager-toolbar button,
+    .manager-toolbar select,
+    .manager-toolbar input {
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius);
+      background: var(--ysbot-surface);
+      color: var(--ysbot-text);
+      padding: 6px 10px;
+      font: inherit;
+    }
+    .manager-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius);
+      background: var(--ysbot-surface);
+      margin-bottom: 8px;
+    }
+    .manager-item .info {
+      min-width: 0;
+      overflow: hidden;
+    }
+    .manager-item .title {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .manager-item .sub {
+      display: block;
+      font-size: 12px;
+      opacity: 0.7;
+    }
+    .manager-item .actions {
+      display: flex;
+      gap: 6px;
+      flex: none;
+      flex-wrap: wrap;
+    }
+    .manager-item button {
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius);
+      background: var(--ysbot-surface);
+      color: var(--ysbot-text);
+      padding: 4px 8px;
+      cursor: pointer;
+      font: inherit;
+    }
+    .manager-item button.danger {
+      color: var(--ysbot-danger, #b91c1c);
+      border-color: var(--ysbot-danger, #b91c1c);
+    }
+    .notice {
+      min-height: 22px;
+      padding: 0 16px 8px;
+      color: var(--ysbot-danger, #d9534f);
+      font-size: 12px;
+    }
+    .scroll-bottom {
+      position: fixed;
+      right: 88px;
+      bottom: 76px;
+      z-index: 20;
+      display: none;
+      border: 1px solid var(--ysbot-border);
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      background: var(--ysbot-primary);
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+    }
+    .scroll-bottom.show {
+      display: block;
+    }
+    .global-toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 1100;
+      max-width: 420px;
+      padding: 12px 16px;
+      border-radius: var(--ysbot-radius, 6px);
+      background: var(--ysbot-primary);
+      color: #fff;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.2s, transform 0.2s;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2);
+      pointer-events: none;
+    }
+    .global-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .global-toast.ok {
+      background: #15803d;
+    }
+    .global-toast.error {
+      background: var(--ysbot-danger, #b91c1c);
+    }
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.45);
+    }
+    .confirm-overlay.hidden {
+      display: none;
+    }
+    .confirm-box {
+      max-width: 420px;
+      width: calc(100% - 40px);
+      padding: 18px;
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius, 8px);
+      background: var(--ysbot-surface);
+      color: var(--ysbot-text);
+      box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2);
+    }
+    .confirm-box p {
+      margin: 0 0 14px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+    .confirm-box .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .confirm-box button {
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius, 6px);
+      background: var(--ysbot-surface);
+      color: var(--ysbot-text);
+      padding: 7px 14px;
+      cursor: pointer;
+      font: inherit;
+    }
+    .confirm-box button.primary {
+      background: var(--ysbot-primary);
+      color: #fff;
+      border-color: var(--ysbot-primary);
+    }
+    .confirm-box button.danger {
+      color: var(--ysbot-danger, #b91c1c);
+      border-color: var(--ysbot-danger, #b91c1c);
+    }
+    .messages {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .message {
+      max-width: 720px;
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius);
+      background: var(--ysbot-surface);
+    }
+    .message.out {
+      margin-left: auto;
+      border-color: var(--ysbot-primary);
+    }
+    .message-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      opacity: 0.78;
+      flex-wrap: wrap;
+    }
+    .message-text {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      line-height: 1.5;
+    }
+    .message.recalled .message-text {
+      opacity: 0.6;
+      font-style: italic;
+    }
+    .recall {
+      margin-left: auto;
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius);
+      background: transparent;
+      color: var(--ysbot-text);
+      cursor: pointer;
+      padding: 2px 8px;
+    }
+    .composer {
+      display: flex;
+      gap: 10px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--ysbot-border);
+      background: var(--ysbot-surface);
+    }
+    .composer .mode {
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius);
+      background: var(--ysbot-bg);
+      color: var(--ysbot-text);
+      padding: 0 8px;
+      font: inherit;
+    }
+    .composer input,
+    .composer textarea {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius);
+      background: var(--ysbot-bg);
+      color: var(--ysbot-text);
+      padding: 10px 12px;
+      font: inherit;
+    }
+    .composer textarea {
+      min-height: 84px;
+      resize: vertical;
+    }
+    .composer button {
+      border: 0;
+      border-radius: var(--ysbot-radius);
+      background: var(--ysbot-primary);
+      color: #fff;
+      padding: 0 20px;
+      cursor: pointer;
+      font: inherit;
+    }
+    .empty {
+      padding: 24px;
+      color: var(--ysbot-muted);
+      text-align: center;
+    }
+    details {
+      margin-top: 8px;
+      border-top: 1px solid var(--ysbot-border);
+      padding-top: 6px;
+    }
+    summary {
+      cursor: pointer;
+      font-size: 12px;
+      opacity: 0.78;
+    }
+    details pre {
+      margin: 8px 0 0;
+      padding: 10px;
+      overflow: auto;
+      background: var(--ysbot-bg);
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius);
+      font-size: 12px;
+    }
+    @media (max-width: 720px) {
+      .chat-shell {
+        grid-template-columns: 120px minmax(0, 1fr);
+      }
+      .contact-sub {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="chat-shell">
+    <aside class="scene-list">
+      <div class="scene-head">
+        <span>会话</span>
+        <button id="managerBtn">会话管理</button>
+      </div>
+      <div id="contacts"></div>
+    </aside>
+    <section id="chatMain" class="chat-main">
+      <header class="chat-header">
+        <div class="chat-title" id="chatTitle">选择会话</div>
+        <div class="chat-tools">
+          <button id="refresh">刷新</button>
+          <button id="clear">清空</button>
+        </div>
+      </header>
+      <div class="notice" id="notice"></div>
+      <div class="messages" id="messages"></div>
+      <div class="composer">
+        <select id="mode" class="mode" aria-label="发送模式">
+          <option value="text">文本</option>
+          <option value="segments">消息段</option>
+        </select>
+        <input id="text" placeholder="输入文本" autocomplete="off">
+        <textarea id="segments" placeholder='[{"type":"text","data":{"text":"hello"}}]' style="display:none"></textarea>
+        <button id="send">发送</button>
+      </div>
+    </section>
+    <section id="managerView" class="manager-view">
+      <div class="manager-tabs">
+        <button data-tab="account" class="active">账号</button>
+        <button data-tab="groups">群管理</button>
+        <button id="managerBack" style="margin-left:auto">返回聊天</button>
+      </div>
+      <div id="manager-account" class="manager-panel">
+        <div class="manager-toolbar">
+          <button id="managerRefresh">刷新</button>
+        </div>
+        <h3>群申请</h3>
+        <div id="account-group-requests"></div>
+        <h3>好友申请</h3>
+        <div id="account-friend-requests"></div>
+        <h3>群列表</h3>
+        <div id="account-groups"></div>
+        <h3>好友列表</h3>
+        <div id="account-friends"></div>
+      </div>
+      <div id="manager-groups" class="manager-panel" style="display:none">
+        <div class="manager-toolbar">
+          <select id="manageGroupSelect"></select>
+          <button id="loadMembers">加载成员</button>
+          <button id="resolveManageGroups">刷新可管理群</button>
+          <input id="muteDuration" type="number" min="0" value="600">
+          <button id="muteAll">一键禁言</button>
+        </div>
+        <div id="manager-members"></div>
+      </div>
+    </section>
+  </main>
+  <button id="scrollBottom" class="scroll-bottom" title="回到底部">↓</button>
+  <div id="globalToast" class="global-toast"></div>
+  <div id="confirmOverlay" class="confirm-overlay hidden">
+    <div class="confirm-box">
+      <p id="confirmText"></p>
+      <div class="actions">
+        <button id="confirmCancel">取消</button>
+        <button id="confirmOk" class="primary">确认</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const token = window.__YSBOT_ADMIN_TOKEN__ || "";
+    const base = "/api/plugins/action-qq/admin/chat";
+    const state = {
+      current: null,
+      contacts: { groups: [], friends: [] },
+      openDetails: new Set(),
+      openCategories: new Set()
+    };
+    let noticeTimer = null;
+    let userScrolledUp = false;
+    let confirmResolve = null;
+
+    function askConfirm(message) {
+      return new Promise((resolve) => {
+        confirmResolve = resolve;
+        document.querySelector("#confirmText").textContent = message;
+        document.querySelector("#confirmOverlay").classList.remove("hidden");
+      });
+    }
+
+    function closeConfirm(result) {
+      document.querySelector("#confirmOverlay").classList.add("hidden");
+      if (confirmResolve) confirmResolve(result);
+      confirmResolve = null;
+    }
+
+    async function api(path, options = {}) {
+      const response = await fetch(`${base}${path}`, {
+        ...options,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...(options.headers || {})
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "request failed");
+      return data;
+    }
+
+    function showNotice(message) {
+      const node = document.querySelector("#notice");
+      node.textContent = message || "";
+      clearTimeout(noticeTimer);
+      const toast = document.querySelector("#globalToast");
+      if (!message) {
+        toast.className = "global-toast";
+        return;
+      }
+      const type =
+        message.includes("失败") ||
+          message.includes("无效") ||
+          message.includes("错误")
+          ? "error"
+          : "ok";
+      toast.textContent = message;
+      toast.className = `global-toast show ${type}`;
+      noticeTimer = setTimeout(() => {
+        node.textContent = "";
+        toast.className = "global-toast";
+      }, 4000);
+    }
+
+    function formatTime(value) {
+      if (!value) return "";
+      const date = new Date(value);
+      return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+    }
+
+    function categoryLabel(key) {
+      return { owner: "群主", admin: "管理", member: "成员", private: "私聊" }[key] || key;
+    }
+
+    function renderContacts(contacts) {
+      state.contacts = contacts;
+      const root = document.querySelector("#contacts");
+      root.textContent = "";
+      const buckets = {
+        owner: contacts.groups.filter((group) => group.role === "owner"),
+        admin: contacts.groups.filter((group) => group.role === "admin"),
+        member: contacts.groups.filter((group) => group.role === "member"),
+        private: contacts.friends.map((friend) => ({
+          type: "private",
+          id: friend.id,
+          name: friend.remark || friend.nickname || friend.id,
+          sub: friend.id
+        }))
+      };
+
+      for (const key of ["owner", "admin", "member", "private"]) {
+        const items = buckets[key];
+        if (!items.length) continue;
+        const category = document.createElement("section");
+        category.className = "category";
+        const head = document.createElement("button");
+        head.className = "category-head";
+        head.innerHTML = `<span>${categoryLabel(key)}</span><span class="count">${items.length}</span>`;
+        const body = document.createElement("div");
+        body.className = "category-body";
+        if (state.openCategories.has(key)) body.classList.add("open");
+
+        head.addEventListener("click", () => {
+          if (state.openCategories.has(key)) {
+            state.openCategories.delete(key);
+            body.classList.remove("open");
+          } else {
+            state.openCategories.add(key);
+            body.classList.add("open");
+          }
+        });
+
+        for (const item of items) {
+          const button = document.createElement("button");
+          button.className = "contact-item";
+          if (
+            state.current &&
+            state.current.type === (key === "private" ? "private" : "group") &&
+            state.current.id === String(item.id)
+          ) {
+            button.classList.add("active");
+          }
+          const title = document.createElement("span");
+          title.className = "contact-title";
+          title.textContent = key === "private" ? item.name : item.name || item.id;
+          const sub = document.createElement("span");
+          sub.className = "contact-sub";
+          sub.textContent = item.sub || item.id || "";
+          button.append(title, sub);
+          button.addEventListener("click", async () => {
+            if (document.querySelector("#managerView").classList.contains("active")) {
+              showChatView();
+            }
+            if (key !== "private" && item.role === "member") {
+              try {
+                const roleData = await api("/resolve-role", {
+                  method: "POST",
+                  body: JSON.stringify({ sceneId: item.id })
+                });
+                const group = state.contacts.groups.find(
+                  (candidate) => String(candidate.id) === String(item.id),
+                );
+                if (group) group.role = roleData.role;
+                item.role = roleData.role;
+                renderContacts(state.contacts);
+              } catch {
+                // Keep the current member role when role resolution fails.
+              }
+            }
+            state.current = {
+              type: key === "private" ? "private" : "group",
+              id: String(item.id),
+              name: item.name || item.id,
+              role: key
+            };
+            userScrolledUp = false;
+            document.querySelectorAll(".contact-item").forEach((node) => node.classList.remove("active"));
+            button.classList.add("active");
+            document.querySelector("#chatTitle").textContent = state.current.name;
+            showNotice("");
+            loadMessages();
+          });
+          body.appendChild(button);
+        }
+        category.append(head, body);
+        root.appendChild(category);
+      }
+      if (!root.children.length) {
+        root.innerHTML = '<div class="empty">暂无联系人</div>';
+      }
+    }
+
+    function canRecall(message) {
+      if (message.recalled) return false;
+      if (!state.current) return false;
+      if (state.current.type === "private" || state.current.role === "member") {
+        return message.direction === "out";
+      }
+      return true;
+    }
+
+    function renderMessages(messages) {
+      const root = document.querySelector("#messages");
+      root.textContent = "";
+      if (!messages.length) {
+        root.innerHTML = '<div class="empty">暂无消息</div>';
+        return;
+      }
+      for (const message of messages) {
+        const item = document.createElement("article");
+        item.className = `message ${message.direction === "out" ? "out" : ""}${message.recalled ? " recalled" : ""}`;
+        const meta = document.createElement("div");
+        meta.className = "message-meta";
+        const sender = document.createElement("span");
+        sender.textContent = `${message.senderName || "未知"} ${message.senderId ? `(${message.senderId})` : ""}`;
+        const time = document.createElement("span");
+        time.textContent = formatTime(message.ts);
+        const id = document.createElement("span");
+        id.textContent = `#${message.messageId || ""}`;
+        const text = document.createElement("div");
+        text.className = "message-text";
+        text.textContent = message.recalled ? "已撤回" : message.text || "";
+        meta.append(sender, time, id);
+        if (canRecall(message)) {
+          const recall = document.createElement("button");
+          recall.className = "recall";
+          recall.textContent = "撤回";
+          recall.addEventListener("click", () => recallMessage(message.messageId));
+          meta.appendChild(recall);
+        }
+        item.append(meta, text);
+
+        const detailKey = message.id || `${message.messageId}-${message.direction}`;
+        const details = document.createElement("details");
+        if (state.openDetails.has(detailKey)) details.open = true;
+        const summary = document.createElement("summary");
+        summary.textContent = "消息详情";
+        const pre = document.createElement("pre");
+        pre.textContent = JSON.stringify({
+          messageId: message.messageId,
+          direction: message.direction,
+          messageType: message.messageType,
+          sceneType: message.sceneType,
+          sceneId: message.sceneId,
+          sender: message.sender,
+          ts: message.ts,
+          text: message.text,
+          segments: message.segments,
+          raw: message.raw
+        }, null, 2);
+        summary.addEventListener("click", (event) => {
+          event.preventDefault();
+          if (state.openDetails.has(detailKey)) {
+            state.openDetails.delete(detailKey);
+            details.open = false;
+          } else {
+            state.openDetails.add(detailKey);
+            details.open = true;
+          }
+        });
+        details.append(summary, pre);
+        item.appendChild(details);
+        root.appendChild(item);
+      }
+      if (!userScrolledUp) root.scrollTop = root.scrollHeight;
+    }
+
+    async function loadContacts() {
+      try {
+        const data = await api("/contacts");
+        renderContacts(data);
+        return data;
+      } catch (error) {
+        showNotice(error.message);
+        return null;
+      }
+    }
+
+    async function loadMessages() {
+      if (!state.current) return;
+      try {
+        const data = await api(
+          `/messages?sceneType=${encodeURIComponent(state.current.type)}&sceneId=${encodeURIComponent(state.current.id)}`
+        );
+        renderMessages(data.messages);
+      } catch (error) {
+        showNotice(error.message);
+      }
+    }
+
+    async function recallMessage(messageId) {
+      try {
+        await api("/delete", {
+          method: "POST",
+          body: JSON.stringify({ messageId })
+        });
+        showNotice("撤回成功");
+        await loadMessages();
+      } catch (error) {
+        showNotice(`撤回失败：${error.message}`);
+      }
+    }
+
+    async function sendMessage() {
+      if (!state.current) return;
+      let message;
+      const mode = document.querySelector("#mode").value;
+      const textInput = document.querySelector("#text");
+      const segmentsInput = document.querySelector("#segments");
+      if (mode === "segments") {
+        try {
+          message = JSON.parse(segmentsInput.value.trim());
+        } catch {
+          showNotice("消息段 JSON 无效");
+          return;
+        }
+      } else {
+        message = textInput.value.trim();
+      }
+      if (!message || (Array.isArray(message) && message.length === 0)) return;
+      try {
+        await api("/send", {
+          method: "POST",
+          body: JSON.stringify({
+            sceneType: state.current.type,
+            sceneId: state.current.id,
+            message
+          })
+        });
+        textInput.value = "";
+        segmentsInput.value = "";
+        showNotice("发送成功");
+        await Promise.all([loadContacts(), loadMessages()]);
+      } catch (error) {
+        showNotice(`发送失败：${error.message}`);
+      }
+    }
+
+    async function refreshAll() {
+      const button = document.querySelector("#refresh");
+      button.disabled = true;
+      button.textContent = "刷新中...";
+      try {
+        const data = await api("/contacts?force=1");
+        renderContacts(data);
+        await loadMessages();
+        showNotice(
+          `已刷新：${data.groups.length} 个群 / ${data.friends.length} 个私聊`,
+        );
+      } catch (error) {
+        showNotice(`刷新失败：${error.message}`);
+      } finally {
+        button.disabled = false;
+        button.textContent = "刷新";
+      }
+    }
+
+    async function clearCurrent() {
+      if (!state.current) return;
+      if (!(await askConfirm("确认清空当前会话的本地消息？"))) return;
+      try {
+        await api("/clear", {
+          method: "POST",
+          body: JSON.stringify({
+            sceneType: state.current.type,
+            sceneId: state.current.id
+          })
+        });
+        showNotice("已清空");
+        await Promise.all([loadContacts(), loadMessages()]);
+      } catch (error) {
+        showNotice(`清空失败：${error.message}`);
+      }
+    }
+
+    function showChatView() {
+      document.querySelector("#chatMain").style.display = "";
+      document.querySelector("#managerView").classList.remove("active");
+      document.querySelector("#managerView").style.display = "none";
+    }
+
+    function showManagerView() {
+      document.querySelector("#chatMain").style.display = "none";
+      const manager = document.querySelector("#managerView");
+      manager.classList.add("active");
+      manager.style.display = "flex";
+      loadManagerOverview();
+    }
+
+    function managerItem(title, sub, actions = []) {
+      const item = document.createElement("div");
+      item.className = "manager-item";
+      const info = document.createElement("div");
+      info.className = "info";
+      const titleNode = document.createElement("span");
+      titleNode.className = "title";
+      titleNode.textContent = title;
+      const subNode = document.createElement("span");
+      subNode.className = "sub";
+      subNode.textContent = sub || "";
+      info.append(titleNode, subNode);
+      const actionBox = document.createElement("div");
+      actionBox.className = "actions";
+      for (const action of actions) actionBox.appendChild(action);
+      item.append(info, actionBox);
+      return item;
+    }
+
+    function managerButton(text, className, onClick) {
+      const button = document.createElement("button");
+      button.textContent = text;
+      if (className) button.classList.add(className);
+      button.addEventListener("click", onClick);
+      return button;
+    }
+
+    function renderList(container, items, renderer) {
+      container.textContent = "";
+      if (!items.length) {
+        container.innerHTML = '<div class="empty">暂无数据</div>';
+        return;
+      }
+      for (const item of items) container.appendChild(renderer(item));
+    }
+
+    async function loadManagerOverview() {
+      try {
+        const data = await api("/manager/overview");
+        renderList(
+          document.querySelector("#account-group-requests"),
+          data.groupRequests,
+          (request) =>
+            managerItem(
+              `${request.requester_nick || request.requester_uin}`,
+              `${request.group_name || request.group_id}：${request.message || ""}`,
+              [
+                managerButton("同意", "", () =>
+                  handleGroupRequest(request.flag, "add", true),
+                ),
+                managerButton("拒绝", "danger", () =>
+                  handleGroupRequest(request.flag, "add", false),
+                ),
+              ],
+            ),
+        );
+        renderList(
+          document.querySelector("#account-friend-requests"),
+          data.friendRequests,
+          (request) =>
+            managerItem(
+              request.nick || request.uid,
+              `${request.source || ""}：${request.msg || ""}`,
+              [
+                managerButton("同意", "", () =>
+                  handleFriendRequest(request.uid, true),
+                ),
+                managerButton("拒绝", "danger", () =>
+                  handleFriendRequest(request.uid, false),
+                ),
+              ],
+            ),
+        );
+        renderList(
+          document.querySelector("#account-groups"),
+          data.groups,
+          (group) =>
+            managerItem(
+              group.name || group.id,
+              `群 ${group.id}`,
+              [
+                managerButton("退群", "danger", () =>
+                  handleQuitGroup(group.id),
+                ),
+              ],
+            ),
+        );
+        renderList(
+          document.querySelector("#account-friends"),
+          data.friends,
+          (friend) =>
+            managerItem(
+              friend.remark || friend.nickname || friend.id,
+              `QQ ${friend.id}`,
+              [
+                managerButton("删除好友", "danger", () =>
+                  handleDeleteFriend(friend.id),
+                ),
+              ],
+            ),
+        );
+        const select = document.querySelector("#manageGroupSelect");
+        select.textContent = "";
+        const manageable = data.groups.filter(
+          (group) => group.role === "owner" || group.role === "admin",
+        );
+        if (!manageable.length) {
+          const option = document.createElement("option");
+          option.textContent = "暂无可管理群";
+          option.value = "";
+          select.appendChild(option);
+        } else {
+          for (const group of manageable) {
+            const option = document.createElement("option");
+            option.value = group.id;
+            option.textContent = `${group.name || group.id}（${group.role === "owner" ? "群主" : "管理"}）`;
+            select.appendChild(option);
+          }
+        }
+      } catch (error) {
+        showNotice(`管理页加载失败：${error.message}`);
+      }
+    }
+
+    async function handleGroupRequest(flag, subType, approve) {
+      try {
+        await api("/manager/handle-group-request", {
+          method: "POST",
+          body: JSON.stringify({ flag, sub_type: subType, approve }),
+        });
+        showNotice(approve ? "群申请已同意" : "群申请已拒绝");
+        await loadManagerOverview();
+      } catch (error) {
+        showNotice(`处理群申请失败：${error.message}`);
+      }
+    }
+
+    async function handleFriendRequest(flag, approve) {
+      try {
+        await api("/manager/handle-friend-request", {
+          method: "POST",
+          body: JSON.stringify({ flag, approve }),
+        });
+        showNotice(approve ? "好友申请已同意" : "好友申请已拒绝");
+        await loadManagerOverview();
+      } catch (error) {
+        showNotice(`处理好友申请失败：${error.message}`);
+      }
+    }
+
+    async function handleQuitGroup(groupId) {
+      if (!(await askConfirm("确认退出该群？"))) return;
+      try {
+        await api("/manager/quit-group", {
+          method: "POST",
+          body: JSON.stringify({ groupId }),
+        });
+        showNotice("已退出群");
+        await loadManagerOverview();
+      } catch (error) {
+        showNotice(`退群失败：${error.message}`);
+      }
+    }
+
+    async function handleDeleteFriend(userId) {
+      if (!(await askConfirm("确认删除该好友？"))) return;
+      try {
+        await api("/manager/delete-friend", {
+          method: "POST",
+          body: JSON.stringify({ userId }),
+        });
+        showNotice("好友已删除");
+        await loadManagerOverview();
+      } catch (error) {
+        showNotice(`删除好友失败：${error.message}`);
+      }
+    }
+
+    async function loadManagerMembers() {
+      const groupId = document.querySelector("#manageGroupSelect").value;
+      if (!groupId) return;
+      try {
+        const data = await api(`/manager/members?groupId=${encodeURIComponent(groupId)}`);
+        renderList(
+          document.querySelector("#manager-members"),
+          data.members,
+          (member) =>
+            managerItem(
+              member.nickname || member.card || member.user_id,
+              `QQ ${member.user_id} / ${member.role || "member"}`,
+              [
+                managerButton("禁言", "", () =>
+                  handleMuteMember(groupId, member.user_id),
+                ),
+                managerButton("踢人", "danger", () =>
+                  handleKickMember(groupId, member.user_id),
+                ),
+              ],
+            ),
+        );
+      } catch (error) {
+        showNotice(`加载成员失败：${error.message}`);
+      }
+    }
+
+    async function handleMuteMember(groupId, userId) {
+      const duration = Number(document.querySelector("#muteDuration").value) || 600;
+      try {
+        await api("/manager/mute", {
+          method: "POST",
+          body: JSON.stringify({ groupId, userId, duration }),
+        });
+        showNotice("已禁言");
+      } catch (error) {
+        showNotice(`禁言失败：${error.message}`);
+      }
+    }
+
+    async function handleKickMember(groupId, userId) {
+      if (!(await askConfirm("确认踢出该成员？"))) return;
+      try {
+        await api("/manager/kick", {
+          method: "POST",
+          body: JSON.stringify({ groupId, userId }),
+        });
+        showNotice("已踢出");
+        await loadManagerMembers();
+      } catch (error) {
+        showNotice(`踢人失败：${error.message}`);
+      }
+    }
+
+    async function handleMuteAll() {
+      const groupId = document.querySelector("#manageGroupSelect").value;
+      const duration = Number(document.querySelector("#muteDuration").value) || 600;
+      if (!groupId) return;
+      if (!(await askConfirm(`确认对群内所有普通成员禁言 ${duration} 秒？`))) return;
+      try {
+        const data = await api("/manager/mute-all", {
+          method: "POST",
+          body: JSON.stringify({ groupId, duration }),
+        });
+        showNotice(`已禁言 ${data.muted} 名成员`);
+      } catch (error) {
+        showNotice(`一键禁言失败：${error.message}`);
+      }
+    }
+
+    async function resolveManageGroups() {
+      try {
+        await api("/manager/resolve-roles", {
+          method: "POST",
+          body: "{}",
+        });
+        await loadManagerOverview();
+        showNotice("可管理群已刷新");
+      } catch (error) {
+        showNotice(`刷新可管理群失败：${error.message}`);
+      }
+    }
+
+    function syncInputMode() {
+      const mode = document.querySelector("#mode").value;
+      const textInput = document.querySelector("#text");
+      const segmentsInput = document.querySelector("#segments");
+      textInput.style.display = mode === "segments" ? "none" : "";
+      segmentsInput.style.display = mode === "segments" ? "" : "none";
+    }
+
+    document.querySelector("#send").addEventListener("click", sendMessage);
+    document.querySelector("#refresh").addEventListener("click", refreshAll);
+    document.querySelector("#clear").addEventListener("click", clearCurrent);
+    document.querySelector("#confirmOk").addEventListener("click", () => closeConfirm(true));
+    document.querySelector("#confirmCancel").addEventListener("click", () => closeConfirm(false));
+    document.querySelector("#managerBtn").addEventListener("click", showManagerView);
+    document.querySelector("#managerBack").addEventListener("click", showChatView);
+    document.querySelector("#managerRefresh").addEventListener("click", loadManagerOverview);
+    document.querySelector("#loadMembers").addEventListener("click", loadManagerMembers);
+    document.querySelector("#muteAll").addEventListener("click", handleMuteAll);
+    document.querySelector("#resolveManageGroups").addEventListener("click", resolveManageGroups);
+    document.querySelectorAll(".manager-tabs [data-tab]").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".manager-tabs [data-tab]").forEach((item) => {
+          item.classList.toggle("active", item === tab);
+        });
+        const account = document.querySelector("#manager-account");
+        const groups = document.querySelector("#manager-groups");
+        if (tab.dataset.tab === "groups") {
+          account.style.display = "none";
+          groups.style.display = "";
+        } else {
+          account.style.display = "";
+          groups.style.display = "none";
+        }
+      });
+    });
+    const messagesNode = document.querySelector("#messages");
+    const scrollBottom = document.querySelector("#scrollBottom");
+    messagesNode.addEventListener("scroll", () => {
+      const distance =
+        messagesNode.scrollHeight - messagesNode.scrollTop - messagesNode.clientHeight;
+      if (distance > 80) {
+        userScrolledUp = true;
+        scrollBottom.classList.add("show");
+      } else {
+        userScrolledUp = false;
+        scrollBottom.classList.remove("show");
+      }
+    });
+    scrollBottom.addEventListener("click", () => {
+      userScrolledUp = false;
+      messagesNode.scrollTop = messagesNode.scrollHeight;
+      scrollBottom.classList.remove("show");
+    });
+    document.querySelector("#mode").addEventListener("change", syncInputMode);
+    document.querySelector("#text").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") sendMessage();
+    });
+    syncInputMode();
+    loadContacts();
+    setInterval(loadContacts, 10000);
+    setInterval(loadMessages, 3000);
+  </script>
+</body>
+</html>

@@ -12,6 +12,7 @@ export class ActionDispatcher {
       try {
         return await this.wsClient.send(action, params);
       } catch (error) {
+        if (error?.code === "ONEBOT_FAILED") throw error;
         errors.push(error);
       }
     }

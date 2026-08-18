@@ -126,6 +126,22 @@ export async function loadPluginHarness(pluginId, options = {}) {
   });
   const registry = new PluginRegistry();
   const logger = options.logger || createTestLogger(options.silent !== false);
+  const logSources = new Map();
+  const logging = {
+    register(source) {
+      logSources.set(source.id, source);
+      return () => logSources.delete(source.id);
+    },
+    list() {
+      return [...logSources.keys()].map((id) => ({ id }));
+    },
+    async read(id, query) {
+      return logSources.get(id)?.read(query) || [];
+    },
+    async clear(id) {
+      return logSources.get(id)?.clear();
+    },
+  };
   const runtimePluginDir = path.join(tempRoot, "plugin-dir");
   await ensureDir(runtimePluginDir);
   if (options.configOverrides) {
@@ -136,6 +152,17 @@ export async function loadPluginHarness(pluginId, options = {}) {
       `${JSON.stringify(options.configOverrides, null, 2)}\n`,
       "utf8",
     );
+  }
+  if (options.pluginConfigOverrides) {
+    for (const [id, values] of Object.entries(options.pluginConfigOverrides)) {
+      const overrideDir = path.join(dataDir, id);
+      await ensureDir(overrideDir);
+      await fs.writeFile(
+        path.join(overrideDir, "config.json"),
+        `${JSON.stringify(values, null, 2)}\n`,
+        "utf8",
+      );
+    }
   }
   let ctx = null;
   const manager = new PluginManager({
@@ -158,6 +185,7 @@ export async function loadPluginHarness(pluginId, options = {}) {
         api: apiRouter,
         pluginManager: manager,
         protocol: protocolBridge,
+        logging,
         pluginDir: path.join(runtimePluginDir, manifest.id),
         cacheDir: null,
         dataDir: path.join(dataDir, manifest.id),
@@ -200,6 +228,7 @@ export async function loadPluginHarness(pluginId, options = {}) {
     scheduler,
     runtime,
     secrets,
+    logging,
     async invoke(params, context = {}) {
       return registry.invoke(pluginId, params, context);
     },

@@ -81,3 +81,29 @@ test("action dispatcher fails when no transport is available", async () => {
     /No OneBot transport available/,
   );
 });
+
+test("action dispatcher does not retry HTTP after explicit OneBot failure", async () => {
+  let httpCalled = false;
+  const dispatcher = new ActionDispatcher({
+    wsClient: {
+      connected: true,
+      async send() {
+        throw new OneBotActionError("ONEBOT_FAILED", "kick member failed", {
+          wording: "kick member failed",
+        });
+      },
+    },
+    httpClient: {
+      async send() {
+        httpCalled = true;
+        return { status: "ok", data: {} };
+      },
+    },
+  });
+
+  await assert.rejects(
+    dispatcher.send("set_group_kick", {}),
+    (error) => error.code === "ONEBOT_FAILED",
+  );
+  assert.equal(httpCalled, false);
+});
