@@ -26,6 +26,14 @@ test("admin metadata collects config and page declarations", async (t) => {
             enabled: { type: "boolean", default: true },
           },
         },
+        actions: [
+          {
+            id: "ping",
+            label: "Ping",
+            path: "/api/plugins/demo/admin/ping",
+            body: { value: "$enabled" },
+          },
+        ],
       },
       pages: [
         {
@@ -45,6 +53,8 @@ test("admin metadata collects config and page declarations", async (t) => {
   };
   const metadata = await collectAdminMetadata(ctx);
   assert.equal(metadata.get("demo").config.title, "Demo Config");
+  assert.equal(metadata.get("demo").config.actions[0].id, "ping");
+  assert.equal(metadata.get("demo").config.actions[0].requiresSave, true);
   assert.equal(metadata.get("demo").pages[0].id, "memory");
 
   const direct = await loadAdminMetadata(ctx, "demo");

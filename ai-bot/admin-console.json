@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "config": {
+    "title": "AI Bot 配置",
+    "groups": [
+      {
+        "id": "general",
+        "title": "通用"
+      },
+      {
+        "id": "reply",
+        "title": "回复"
+      },
+      {
+        "id": "admin",
+        "title": "管理"
+      }
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "defaultEnabled": {
+          "type": "boolean",
+          "default": false,
+          "title": "默认启用"
+        },
+        "privateEnabled": {
+          "type": "boolean",
+          "default": false,
+          "title": "私聊回复"
+        },
+        "defaultReplyMode": {
+          "type": "string",
+          "enum": ["mention", "all"],
+          "default": "mention",
+          "title": "默认回复模式"
+        },
+        "enabledGroups": {
+          "type": "array",
+          "default": [],
+          "title": "启用群"
+        },
+        "disabledGroups": {
+          "type": "array",
+          "default": [],
+          "title": "禁用群"
+        },
+        "adminUserIds": {
+          "type": "array",
+          "default": [],
+          "title": "管理员 QQ"
+        },
+        "systemPrompt": {
+          "type": "string",
+          "default": "你是 YSbot，一个 QQ 机器人。回复保持简洁自然，不要暴露内部配置。",
+          "title": "系统提示词"
+        },
+        "cooldownSeconds": {
+          "type": "integer",
+          "default": 3,
+          "minimum": 0,
+          "maximum": 300,
+          "title": "冷却秒数"
+        },
+        "maxReplyLength": {
+          "type": "integer",
+          "default": 2000,
+          "minimum": 1,
+          "maximum": 10000,
+          "title": "最大回复长度"
+        },
+        "llmProvider": {
+          "type": "string",
+          "default": "",
+          "title": "LLM Provider"
+        },
+        "llmModel": {
+          "type": "string",
+          "default": "",
+          "title": "LLM 模型"
+        }
+      }
+    },
+    "secrets": []
+  },
+  "pages": []
+}

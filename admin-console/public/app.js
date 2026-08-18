@@ -607,6 +607,9 @@ function renderConfigForm(data) {
       <button id="config-save">保存</button>
       <button id="config-validate" class="ghost">校验</button>
       <button id="config-reset" class="danger ghost">重置</button>
+      ${(data.actions || []).map((action) => `
+        <button class="ghost" data-config-action="${escapeHtml(action.id)}">${escapeHtml(action.label || action.id)}</button>
+      `).join("")}
     </div>
     <div id="config-errors"></div>`;
 }
@@ -664,6 +667,61 @@ async function validateConfigForm() {
       : `<div class="error-text">${escapeHtml((data.errors || []).join("; "))}</div>`;
   } catch (error) {
     $("#config-errors").innerHTML = `<div class="error-text">${escapeHtml(error.message)}</div>`;
+  }
+}
+
+function resolveActionBody(template, values) {
+  if (typeof template === "string") {
+    return template.replace(/\$([A-Za-z0-9_]+)/g, (_, key) => {
+      const value = values[key];
+      return value === undefined || value === null ? "" : String(value);
+    });
+  }
+  if (Array.isArray(template)) {
+    return template.map((item) => resolveActionBody(item, values));
+  }
+  if (template && typeof template === "object") {
+    const result = {};
+    for (const [key, value] of Object.entries(template)) {
+      result[key] = resolveActionBody(value, values);
+    }
+    return result;
+  }
+  return template;
+}
+
+async function configAction(actionId) {
+  if (!state.activeConfig) return;
+  const action = (state.activeConfig.actions || []).find(
+    (item) => item.id === actionId,
+  );
+  if (!action) return;
+  try {
+    const { values, clearSecret } = collectConfigForm();
+    if (action.requiresSave !== false) {
+      await api(`/api/admin-console/config/save?pluginId=${encodeURIComponent(state.activeConfig.pluginId)}`, {
+        method: "PUT",
+        body: { values, clearSecret },
+      });
+    }
+    const body = resolveActionBody(action.body || {}, values);
+    const data = await api(action.path, {
+      method: action.method || "POST",
+      body,
+    });
+    const summary =
+      data?.message ||
+      (data?.reply ? `回复：${data.reply}` : "") ||
+      "操作完成";
+    const latency = data?.latencyMs !== undefined ? ` (${data.latencyMs}ms)` : "";
+    const message = `${summary}${latency}`;
+    showToast(message, "ok");
+    const errors = $("#config-errors");
+    if (errors) errors.innerHTML = `<div class="ok-text">${escapeHtml(message)}</div>`;
+  } catch (error) {
+    showToast(error.message);
+    const errors = $("#config-errors");
+    if (errors) errors.innerHTML = `<div class="error-text">${escapeHtml(error.message)}</div>`;
   }
 }
 
@@ -1085,6 +1143,8 @@ function bindEvents() {
     if (event.target.id === "config-save") saveConfigForm();
     if (event.target.id === "config-validate") validateConfigForm();
     if (event.target.id === "config-reset") resetConfigForm();
+    const actionButton = event.target.closest("[data-config-action]");
+    if (actionButton) configAction(actionButton.dataset.configAction);
   });
 
   $("#theme-presets").addEventListener("click", (event) => {

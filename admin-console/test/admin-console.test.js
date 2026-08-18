@@ -8,7 +8,7 @@ test("admin-console loads and registers management routes", async () => {
     const plugin = harness.registry.get("admin-console");
     assert.ok(plugin);
     assert.equal(plugin.type, "system");
-    assert.equal(plugin.version, "1.0.2");
+    assert.equal(plugin.version, "1.0.3");
 
     const exactPaths = harness.apiRouter.routes.map((route) => route.path);
     assert.ok(exactPaths.includes("/api/plugins"));

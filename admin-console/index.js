@@ -548,6 +548,7 @@ export default class AdminConsolePlugin {
         title: metadata.config.title,
         groups: metadata.config.groups,
         schema: metadata.config.schema,
+        actions: metadata.config.actions || [],
         ...(await getConfigSnapshot(this.ctx, pluginId, metadata)),
       });
     }
@@ -570,6 +571,7 @@ export default class AdminConsolePlugin {
       title: metadata.config.title,
       groups: metadata.config.groups,
       schema: metadata.config.schema,
+      actions: metadata.config.actions || [],
       ...(await getConfigSnapshot(this.ctx, pluginId, metadata)),
     });
   }

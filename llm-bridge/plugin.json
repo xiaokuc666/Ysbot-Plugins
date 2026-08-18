@@ -1,0 +1,22 @@
+{
+  "id": "llm-bridge",
+  "type": "capability",
+  "name": "LLM Bridge",
+  "version": "0.1.0",
+  "description": "Unified LLM provider bridge for chat and completion",
+  "enabled": true,
+  "role": "capability",
+  "dependencies": [],
+  "permissions": {
+    "adminOnly": false,
+    "enabledGroups": []
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {}
+  }
+}

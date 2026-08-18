@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "config": {
+    "title": "LLM Bridge 配置",
+    "groups": [
+      {
+        "id": "general",
+        "title": "通用"
+      },
+      {
+        "id": "providers",
+        "title": "Provider"
+      }
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "defaultProvider": {
+          "type": "string",
+          "default": "deepseek",
+          "title": "默认 Provider ID"
+        },
+        "defaultModel": {
+          "type": "string",
+          "default": "",
+          "title": "默认模型"
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "default": 30000,
+          "minimum": 1000,
+          "maximum": 120000,
+          "title": "请求超时"
+        },
+        "allowTools": {
+          "type": "boolean",
+          "default": true,
+          "title": "允许 Tool Call 透传"
+        },
+        "providers": {
+          "type": "array",
+          "default": [
+            {
+              "id": "deepseek",
+              "name": "DeepSeek",
+              "type": "openai",
+              "baseUrl": "https://api.deepseek.com",
+              "model": "deepseek-chat",
+              "enabled": true,
+              "apiKeyRequired": true
+            },
+            {
+              "id": "openai",
+              "name": "OpenAI",
+              "type": "openai",
+              "baseUrl": "https://api.openai.com/v1",
+              "model": "gpt-4o-mini",
+              "enabled": false,
+              "apiKeyRequired": true
+            },
+            {
+              "id": "local",
+              "name": "Local",
+              "type": "openai",
+              "baseUrl": "http://127.0.0.1:11434/v1",
+              "model": "",
+              "enabled": false,
+              "apiKeyRequired": false
+            }
+          ],
+          "title": "Providers JSON"
+        },
+        "providerApiKeys": {
+          "type": "string",
+          "secret": true,
+          "title": "Provider API Keys",
+          "description": "可填 JSON 对象，如 {\"deepseek\":\"sk-xxx\"}；也可直接填当前默认 Provider 的 Key。"
+        }
+      }
+    },
+    "secrets": [
+      "providerApiKeys"
+    ],
+    "actions": [
+      {
+        "id": "test-provider",
+        "label": "测试当前 Provider",
+        "method": "POST",
+        "path": "/api/plugins/llm-bridge/admin/providers/test",
+        "body": {
+          "providerId": "$defaultProvider"
+        }
+      }
+    ]
+  },
+  "pages": []
+}

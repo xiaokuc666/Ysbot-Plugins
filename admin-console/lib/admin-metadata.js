@@ -26,6 +26,21 @@ function normalizePage(page, pluginId) {
   };
 }
 
+function normalizeAction(action, pluginId) {
+  const id = String(action?.id || "").trim();
+  if (!id) throw httpError(400, `admin-console.json action missing id in ${pluginId}`);
+  const path = String(action?.path || "").trim();
+  if (!path) throw httpError(400, `action ${id} missing path in ${pluginId}`);
+  return {
+    id,
+    label: action.label || id,
+    method: action.method || "POST",
+    path,
+    body: action.body && typeof action.body === "object" ? action.body : {},
+    requiresSave: action.requiresSave !== false,
+  };
+}
+
 function normalizeConfig(config, pluginId) {
   if (!config) return null;
   const schema = config.schema && typeof config.schema === "object"
@@ -36,6 +51,9 @@ function normalizeConfig(config, pluginId) {
     groups: Array.isArray(config.groups) ? config.groups : [],
     schema,
     secrets: Array.isArray(config.secrets) ? config.secrets : [],
+    actions: Array.isArray(config.actions)
+      ? config.actions.map((action) => normalizeAction(action, pluginId))
+      : [],
   };
 }
 

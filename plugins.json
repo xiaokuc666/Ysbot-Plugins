@@ -5,13 +5,13 @@
     {
       "id": "admin-console",
       "name": "Admin Console",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "type": "system",
       "description": "YSbot plugin management API and admin UI",
       "adminConsole": true,
-      "file": "admin-console/dist/admin-console-1.0.2.plg",
-      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/admin-console/dist/admin-console-1.0.2.plg",
-      "sha256": "21316b3f8e91646280c70fc673c2e7ad046f7de64ed40a88b58d3ffb96fd3b2d"
+      "file": "admin-console/dist/admin-console-1.0.3.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/admin-console/dist/admin-console-1.0.3.plg",
+      "sha256": "f3871f99a8d7baf10644e88be91f0f2739425c76d0000cb8161d03191d896a0b"
     },
     {
       "id": "protocol-onebot",
@@ -34,6 +34,28 @@
       "file": "action-qq/dist/action-qq-1.0.0.plg",
       "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/action-qq/dist/action-qq-1.0.0.plg",
       "sha256": "261718eb81f555569580795886219a376ed1e603a6aa96bd223bc51914e98e2b"
+    },
+    {
+      "id": "llm-bridge",
+      "name": "LLM Bridge",
+      "version": "0.1.0",
+      "type": "capability",
+      "description": "Unified LLM provider bridge for chat and completion",
+      "adminConsole": true,
+      "file": "llm-bridge/dist/llm-bridge-0.1.0.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/llm-bridge/dist/llm-bridge-0.1.0.plg",
+      "sha256": "a9b00dfe2c5cf53544527dc2c7c782bd2f3f705745ba36c96ae3a3398beac8f0"
+    },
+    {
+      "id": "ai-bot",
+      "name": "AI Bot",
+      "version": "0.1.0",
+      "type": "capability",
+      "description": "QQ AI chat bot business plugin",
+      "adminConsole": true,
+      "file": "ai-bot/dist/ai-bot-0.1.0.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/ai-bot/dist/ai-bot-0.1.0.plg",
+      "sha256": "4eddedb13f589d2ffe237b976d5d659bdd923d2112ffbf6b801fdbb06c1b3a9f"
     }
   ]
 }
