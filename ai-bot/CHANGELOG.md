@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.4
+
+- 默认启用 `get_group_list`、`get_friend_list`、`get_login_info`、`get_group_member_info` 查询工具。
+- 涉及群/好友/账号/成员等事实性问题时，系统提示要求必须调用工具，不得编造数据。
+
 ## 0.5.3
 
 - 采用结构化回复计划：支持 LLM 返回 `{"text","at","replyTo"}`。

@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import { loadPluginHarness } from "../../test/plugin-harness.js";
 import { CONFIG_SCHEMA } from "../lib/config.js";

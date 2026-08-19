@@ -17,6 +17,11 @@ test("CONFIG_SCHEMA exposes ai-bot defaults", () => {
   );
   assert.equal(CONFIG_SCHEMA.properties.memoryRecallLimit.default, 10);
   assert.equal(CONFIG_SCHEMA.properties.memoryMaxInjection.default, 2000);
+  assert.ok(
+    CONFIG_SCHEMA.properties.llmTools.default.some(
+      (tool) => tool.name === "get_group_list",
+    ),
+  );
 });
 
 test("groupEnabled respects explicit disabled and enabled groups", () => {

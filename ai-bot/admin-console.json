@@ -185,7 +185,36 @@
         },
         "llmTools": {
           "type": "array",
-          "default": [],
+          "default": [
+            {
+              "name": "get_group_list",
+              "description": "获取 bot 当前加入的 QQ 群列表",
+              "plugin": "action-qq",
+              "action": "get_group_list",
+              "adminOnly": false
+            },
+            {
+              "name": "get_friend_list",
+              "description": "获取 bot 当前的好友列表",
+              "plugin": "action-qq",
+              "action": "get_friend_list",
+              "adminOnly": false
+            },
+            {
+              "name": "get_login_info",
+              "description": "获取 bot 当前登录账号信息",
+              "plugin": "action-qq",
+              "action": "get_login_info",
+              "adminOnly": false
+            },
+            {
+              "name": "get_group_member_info",
+              "description": "获取指定群成员信息",
+              "plugin": "action-qq",
+              "action": "get_group_member_info",
+              "adminOnly": false
+            }
+          ],
           "title": "LLM 工具定义 JSON"
         },
         "maxToolRounds": {

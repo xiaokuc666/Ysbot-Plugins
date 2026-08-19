@@ -36,7 +36,39 @@ export const CONFIG_SCHEMA = {
     directAttentionWindowMs: { type: "integer", default: 30000 },
     directAttentionFollowCooldownMs: { type: "integer", default: 5000 },
     directAttentionFollowProbability: { type: "number", default: 0.5 },
-    llmTools: { type: "array", default: [] },
+    llmTools: {
+      type: "array",
+      default: [
+        {
+          name: "get_group_list",
+          description: "获取 bot 当前加入的 QQ 群列表",
+          plugin: "action-qq",
+          action: "get_group_list",
+          adminOnly: false,
+        },
+        {
+          name: "get_friend_list",
+          description: "获取 bot 当前的好友列表",
+          plugin: "action-qq",
+          action: "get_friend_list",
+          adminOnly: false,
+        },
+        {
+          name: "get_login_info",
+          description: "获取 bot 当前登录账号信息",
+          plugin: "action-qq",
+          action: "get_login_info",
+          adminOnly: false,
+        },
+        {
+          name: "get_group_member_info",
+          description: "获取指定群成员信息",
+          plugin: "action-qq",
+          action: "get_group_member_info",
+          adminOnly: false,
+        },
+      ],
+    },
     maxToolRounds: { type: "integer", default: 3 },
     replyWithAt: {
       type: "string",

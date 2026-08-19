@@ -580,7 +580,7 @@ export default class AiBotPlugin {
         role: "system",
         content: `${
           config.systemPrompt || ""
-        }\n\nQQ群聊回复规则：\n- 回复保持简短，一次最多一到两句。\n- 不要使用括号描述动作、神态、环境。\n- 不要写“（笑）”“（点头）”“（歪头）”之类内容。\n- 直接输出聊天内容。\n- 普通回复直接输出文本。\n- 如果回复需要 @ 或引用，输出 JSON：{"text":"...","at":"用户QQ","replyTo":"消息ID"}。\n\n回复时不要添加“烟散：”“Bot：”之类的说话人前缀。`,
+        }\n\nQQ群聊回复规则：\n- 回复保持简短，一次最多一到两句。\n- 不要使用括号描述动作、神态、环境。\n- 不要写“（笑）”“（点头）”“（歪头）”之类内容。\n- 直接输出聊天内容。\n- 普通回复直接输出文本。\n- 如果回复需要 @ 或引用，输出 JSON：{"text":"...","at":"用户QQ","replyTo":"消息ID"}。\n- 涉及群列表、好友列表、账号信息、成员信息等事实性问题时，必须调用对应工具，不得编造群名、昵称或数据。\n\n回复时不要添加“烟散：”“Bot：”之类的说话人前缀。`,
       },
     ];
     const identity = await this.loadIdentityContext(event, config, traceId);
