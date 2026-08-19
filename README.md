@@ -24,10 +24,10 @@ node tools/ysbot.js pack
 | --- | --- | --- |
 | [admin-console](admin-console) | 1.0.3 | YSbot 插件管理后台 |
 | [protocol-onebot](protocol-onebot) | 1.0.1 | 通用 OneBot v11 协议插件 |
-| [action-qq](action-qq) | 1.0.0 | 通用 QQ 动作插件 |
+| [action-qq](action-qq) | 1.0.1 | 通用 QQ 动作插件 |
 | [llm-bridge](llm-bridge) | 0.1.0 | 统一大模型接入层 |
-| [ai-bot](ai-bot) | 0.2.1 | QQ AI 聊天机器人业务插件 |
-| [memory-store](memory-store) | 0.1.0 | QQ AI bot 长期记忆系统 |
+| [ai-bot](ai-bot) | 0.2.2 | QQ AI 聊天机器人业务插件 |
+| [memory-store](memory-store) | 1.0.0 | QQ AI bot 长期记忆系统 |
 
 ## 当前能力
 
@@ -41,7 +41,7 @@ node tools/ysbot.js pack
 - 后台配置页提供 `测试当前 Provider` 按钮。
 - 配置修改后立即生效，日志带 traceId。
 
-### ai-bot 0.2.1
+### ai-bot 0.2.2
 
 - 监听 QQ 群聊和私聊事件。
 - 支持 @、回复和普通消息回复策略。
@@ -54,7 +54,7 @@ node tools/ysbot.js pack
 - 非管理员不能修改 bot 配置。
 - 日志 traceId 贯穿 llm-bridge 和 action-qq。
 
-### memory-store 0.1.0
+### memory-store 1.0.0
 
 - 每个群、每个用户独立记忆。
 - 支持 observe / recall / note / list / forget / clear / summarize / stats。

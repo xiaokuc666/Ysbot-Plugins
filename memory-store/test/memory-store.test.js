@@ -46,6 +46,18 @@ test("memory-store observes and recalls entries", async (t) => {
   assert.match(recalled.data[0].content, /咖啡/);
 });
 
+test("memory-store observe ignores null event", async (t) => {
+  const harness = await makeHarness(t);
+  const result = await harness.invoke({
+    action: "observe",
+    params: { event: null },
+    context: { actor: TRUSTED, traceId: "trace-null-event" },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data, null);
+});
+
 test("memory-store admin can list, note, forget and clear", async (t) => {
   const harness = await makeHarness(t);
   await harness.invoke({

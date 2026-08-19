@@ -2,7 +2,7 @@
   "id": "action-qq",
   "type": "action",
   "name": "QQ Action",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Generic QQ action layer based on OneBot v11",
   "enabled": true,
   "role": "action",

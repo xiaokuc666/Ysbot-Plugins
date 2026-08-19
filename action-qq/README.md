@@ -5,8 +5,8 @@
 - ID: `action-qq`
 - Type: `action`
 - Role: `action`
-- Version: `1.0.0`
-- 依赖: `protocol-onebot >= 1.0.1`
+- Version: `1.0.1`
+- 依赖: `protocol-onebot >= 1.2.0`
 
 ## 功能
 

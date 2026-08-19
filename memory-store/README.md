@@ -5,7 +5,7 @@ QQ AI bot 的长期记忆系统，为 ai-bot 提供群内事实、用户偏好�
 - ID: `memory-store`
 - Type: `capability`
 - Role: `capability`
-- Version: `0.1.0`
+- Version: `1.0.0`
 - 依赖: `@xiaokuc/ysbot >= 0.2.5`
 
 ## 功能

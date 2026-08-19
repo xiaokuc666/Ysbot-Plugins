@@ -98,7 +98,7 @@ function installMemoryStore(harness, calls) {
     async invoke(params) {
       calls.push({ kind: "memory", params });
       if (params.action === "recall") {
-        return { ok: true, data: { entries: [{ text: "旧的群聊记忆" }] } };
+        return { ok: true, data: [{ text: "旧的群聊记忆" }] };
       }
       if (params.action === "list") {
         return {
@@ -282,6 +282,64 @@ test("curiosity shouldAct false writes observation to memory-store", async (t) =
   await waitFor(() => calls.some((call) => call.kind === "memory"));
   const memoryCall = calls.find((call) => call.kind === "memory");
   assert.equal(memoryCall.params.action, "observe");
+});
+
+test("curiosity direct reply accepts real memory-store recall array", async (t) => {
+  const harness = await makeHarness(t, {
+    defaultEnabled: true,
+    curiosityEnabled: true,
+    curiosityMemoryEnabled: true,
+    curiosityRandomReplyProbability: 0,
+    curiosityDirectCooldownMs: 60000,
+  });
+  const calls = installFakes(harness);
+  installMemoryStore(harness, calls);
+
+  harness.eventBus.emit("onebot.message", {
+    message_type: "group",
+    group_id: "100000001",
+    user_id: "200000001",
+    sender: { role: "member" },
+    message: [
+      { type: "at", data: { qq: "bot" } },
+      { type: "text", data: { text: "你好" } },
+    ],
+    raw_message: "@bot 你好",
+  });
+
+  await waitFor(() => calls.some((call) => call.kind === "action"));
+  assert.ok(
+    calls.some(
+      (call) => call.kind === "memory" && call.params.action === "recall",
+    ),
+  );
+  assert.ok(calls.some((call) => call.kind === "llm"));
+});
+
+test("curiosity observe without event does not crash", async (t) => {
+  const harness = await makeHarness(t, {
+    defaultEnabled: true,
+    curiosityEnabled: true,
+    curiosityMemoryEnabled: true,
+    curiosityRandomReplyProbability: 0,
+  });
+  const calls = installFakes(harness);
+  installMemoryStore(harness, calls);
+
+  await harness.registry.get("ai-bot").instance.handleCuriosityDecision({
+    shouldAct: false,
+    motivation: {
+      type: "periodic_probe",
+      groupId: "100000001",
+      payload: { traceId: "trace-observe-empty" },
+    },
+  });
+
+  const observe = calls.find(
+    (call) => call.kind === "memory" && call.params.action === "observe",
+  );
+  assert.ok(observe);
+  assert.deepEqual(observe.params.params.event, {});
 });
 
 test("curiosity cooldown suppresses repeated direct reply", async (t) => {

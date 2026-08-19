@@ -221,7 +221,7 @@ export default class AiBotPlugin {
     try {
       await this.ctx.registry.invoke("memory-store", {
         action: "observe",
-        params: { event: motivation.payload?.event || null },
+        params: { event: motivation.payload?.event || {} },
         context: {
           actor: this.botActor(),
           scene: {
@@ -262,12 +262,11 @@ export default class AiBotPlugin {
           traceId,
         },
       });
-      return (
-        result?.data?.entries ||
-        result?.data?.memory ||
-        result?.data ||
-        null
-      );
+      const data = result?.data;
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.entries)) return data.entries;
+      if (Array.isArray(data?.memory)) return data.memory;
+      return data || null;
     } catch (error) {
       this.log.warn("ai", `memory recall failed: ${error.message}`, {
         traceId,

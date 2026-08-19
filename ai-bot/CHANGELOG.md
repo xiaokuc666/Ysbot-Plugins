@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2
+
+- 修复 memory-store recall 返回数组时误取 `Array.prototype.entries` 导致回复链路崩溃的问题。
+- 修复无消息事件的 curiosity 动机写记忆时传入 `null` 导致 observe 失败的问题。
+- 兼容 memory-store 的数组返回结构和 `{ entries: [] }` 返回结构。
+
 ## 0.2.1
 
 - 新增管理员记忆指令：`/ai memory`、`/ai note`、`/ai memory clear`。

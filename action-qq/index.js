@@ -300,7 +300,10 @@ export default class ActionQqPlugin {
     const result = await this.invoke({
       action,
       params,
-      context: this.managementContext(sceneType, sceneId),
+      context: {
+        ...this.managementContext(sceneType, sceneId),
+        skipChatRecord: true,
+      },
     });
     const record = await this.chat.recordOutgoing({
       messageId: result.data?.message_id ?? `out-${Date.now()}`,
@@ -791,6 +794,12 @@ export default class ActionQqPlugin {
       const result = await this.qq.invoke(action, qqParams, contextWithTrace);
       this.status.actionsSent += 1;
       this.status.lastError = null;
+      if (
+        !contextWithTrace.skipChatRecord &&
+        (action === "send_group_msg" || action === "send_private_msg")
+      ) {
+        await this.recordOutgoingAction(action, qqParams, result);
+      }
       this.log.info("actions", `${action} ok`, {
         action,
         traceId,
@@ -812,6 +821,36 @@ export default class ActionQqPlugin {
         code: qqError.code,
       }, qqError);
       throw qqError;
+    }
+  }
+
+  async recordOutgoingAction(action, qqParams, result) {
+    const sceneType = action === "send_group_msg" ? "group" : "private";
+    const sceneId = String(
+      action === "send_group_msg"
+        ? qqParams.group_id
+        : qqParams.user_id,
+    );
+    if (!sceneId || sceneId === "undefined") return null;
+    const message = qqParams.message;
+    const text =
+      typeof message === "string"
+        ? message
+        : messageToText({ message });
+    try {
+      return await this.chat.recordOutgoing({
+        messageId:
+          result?.data?.message_id ??
+          result?.message_id ??
+          `out-${Date.now()}`,
+        sceneType,
+        sceneId,
+        segments: message,
+        text,
+      });
+    } catch (error) {
+      this.log.warn("chat", `outgoing record failed: ${error.message}`);
+      return null;
     }
   }
 

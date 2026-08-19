@@ -225,6 +225,42 @@ test("chat page sends and recalls messages", async () => {
   }
 });
 
+test("action invoke records bot outgoing message in chat history", async () => {
+  const harness = await loadPluginHarness("action-qq", {
+    pluginConfigOverrides: { "protocol-onebot": { autoConnect: false } },
+  });
+  try {
+    const instance = harness.registry.get("action-qq").instance;
+    const calls = [];
+    installFakeProtocol(harness, calls);
+
+    await instance.invoke({
+      action: "send_group_msg",
+      params: {
+        group_id: "100000001",
+        message: [{ type: "text", data: { text: "bot message" } }],
+      },
+      context: {
+        actor: {
+          origin: "system",
+          id: "ai-bot",
+          admin: true,
+          roles: ["admin"],
+        },
+        scene: { type: "group", id: "100000001" },
+        traceId: "trace-bot-out",
+      },
+    });
+
+    const messages = instance.chat.listMessages("group", "100000001");
+    assert.equal(messages.length, 1);
+    assert.equal(messages[0].direction, "out");
+    assert.equal(messages[0].text, "bot message");
+  } finally {
+    await harness.cleanup();
+  }
+});
+
 test("chat clear removes current scene messages", async () => {
   const harness = await loadPluginHarness("action-qq", {
     pluginConfigOverrides: { "protocol-onebot": { autoConnect: false } },

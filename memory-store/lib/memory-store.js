@@ -6,6 +6,7 @@ function generateId() {
 }
 
 function extractText(event = {}) {
+  event = event || {};
   if (typeof event.text === "string" && event.text.trim()) {
     return event.text.trim();
   }

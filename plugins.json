@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-18",
+  "updatedAt": "2026-08-19",
   "license": "MIT",
   "plugins": [
     {
@@ -27,13 +27,13 @@
     {
       "id": "action-qq",
       "name": "QQ Action",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "type": "action",
       "description": "Generic QQ action layer based on OneBot v11",
       "adminConsole": true,
-      "file": "action-qq/dist/action-qq-1.0.0.plg",
-      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/action-qq/dist/action-qq-1.0.0.plg",
-      "sha256": "261718eb81f555569580795886219a376ed1e603a6aa96bd223bc51914e98e2b"
+      "file": "action-qq/dist/action-qq-1.0.1.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/action-qq/dist/action-qq-1.0.1.plg",
+      "sha256": "e093436019d058cc76bd77441c8673ba0cc9a91ff9f742a00c9f352e3a39f9d9"
     },
     {
       "id": "llm-bridge",
@@ -49,24 +49,24 @@
     {
       "id": "ai-bot",
       "name": "AI Bot",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "type": "capability",
       "description": "QQ AI chat bot business plugin",
       "adminConsole": true,
-      "file": "ai-bot/dist/ai-bot-0.2.1.plg",
-      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/ai-bot/dist/ai-bot-0.2.1.plg",
-      "sha256": "9b0222dd0f2c4523ecaad35ccfb261004cdbad050122eed067c08a6913845d68"
+      "file": "ai-bot/dist/ai-bot-0.2.2.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/ai-bot/dist/ai-bot-0.2.2.plg",
+      "sha256": "18cf310cfb19baf7d3fc05112841c252b2edcc053103e3c7283b2bffde8d7f12"
     },
     {
       "id": "memory-store",
       "name": "Memory Store",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "type": "capability",
       "description": "Long-term QQ AI bot memory store",
       "adminConsole": true,
-      "file": "memory-store/dist/memory-store-0.1.0.plg",
-      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/memory-store/dist/memory-store-0.1.0.plg",
-      "sha256": "5e7314fb3caa6749426c21be9c1a2f0811bb6d6294a0220b8c7976c73236ae3d"
+      "file": "memory-store/dist/memory-store-1.0.0.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/memory-store/dist/memory-store-1.0.0.plg",
+      "sha256": "e3dcaa84b22ddd85761da5ae2acefc3bf144d70979ad31f2cb3e0f0eb099df6f"
     }
   ]
 }

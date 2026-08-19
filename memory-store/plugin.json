@@ -2,7 +2,7 @@
   "id": "memory-store",
   "type": "capability",
   "name": "Memory Store",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Long-term QQ AI bot memory store",
   "enabled": true,
   "role": "capability",
