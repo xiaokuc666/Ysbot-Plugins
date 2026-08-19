@@ -45,6 +45,63 @@ function replyMode(value, fallback = "auto") {
     : fallback;
 }
 
+function sanitizeChatText(raw, maxSentences = 2) {
+  const text = String(raw || "")
+    .replace(/[（(【\[][^）)】\]]{0,80}[）)】\]]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const sentences = text.match(/[^。！？!?]+[。！？!?]*/g) || [];
+  if (sentences.length > maxSentences) {
+    return sentences.slice(0, maxSentences).join("").trim();
+  }
+  return text;
+}
+
+function parseReplyPlan(raw, maxSentences = 2) {
+  const rawText = String(raw || "").trim();
+  if (!rawText) return [];
+  let parsed = null;
+  try {
+    const jsonText = rawText
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
+    parsed = JSON.parse(jsonText);
+  } catch {
+    parsed = null;
+  }
+  let items = [];
+  if (Array.isArray(parsed)) {
+    items = parsed;
+  } else if (Array.isArray(parsed?.messages)) {
+    items = parsed.messages;
+  } else if (
+    parsed &&
+    typeof parsed === "object" &&
+    Object.hasOwn(parsed, "text")
+  ) {
+    items = [parsed];
+  }
+  if (!items.length) items = [rawText];
+  return items
+    .map((item) => {
+      if (typeof item === "string") {
+        return {
+          text: sanitizeChatText(item, maxSentences),
+          at: "",
+          replyTo: "",
+        };
+      }
+      if (!item || typeof item !== "object") return null;
+      return {
+        text: sanitizeChatText(item.text || "", maxSentences),
+        at: String(item.at || "").trim(),
+        replyTo: String(item.replyTo || "").trim(),
+      };
+    })
+    .filter((item) => item && item.text);
+}
+
 export default class AiBotPlugin {
   async init(ctx) {
     this.ctx = ctx;
@@ -523,7 +580,7 @@ export default class AiBotPlugin {
         role: "system",
         content: `${
           config.systemPrompt || ""
-        }\n\nQQ群聊回复规则：\n- 回复保持简短，一次最多一到两句。\n- 不要使用括号描述动作、神态、环境。\n- 不要写“（笑）”“（点头）”“（歪头）”之类内容。\n- 直接输出聊天内容。\n\n回复时直接输出你要说的话，不要添加“烟散：”“Bot：”之类的说话人前缀。`,
+        }\n\nQQ群聊回复规则：\n- 回复保持简短，一次最多一到两句。\n- 不要使用括号描述动作、神态、环境。\n- 不要写“（笑）”“（点头）”“（歪头）”之类内容。\n- 直接输出聊天内容。\n- 普通回复直接输出文本。\n- 如果回复需要 @ 或引用，输出 JSON：{"text":"...","at":"用户QQ","replyTo":"消息ID"}。\n\n回复时不要添加“烟散：”“Bot：”之类的说话人前缀。`,
       },
     ];
     const identity = await this.loadIdentityContext(event, config, traceId);
@@ -619,7 +676,7 @@ export default class AiBotPlugin {
     );
   }
 
-  buildReplySegments(event, text, config) {
+  buildReplySegments(event, text, config, plan = {}) {
     const segments = [];
     if (event.message_type === "group") {
       const replySegment = Array.isArray(event.message)
@@ -634,20 +691,24 @@ export default class AiBotPlugin {
         /(?:^|[\s，。！？])(?:你|您)/.test(String(text));
       const shouldQuote =
         quoteMode === "always" ||
-        (quoteMode === "auto" && Boolean(replySegment?.data?.id));
+        (quoteMode === "auto" &&
+          Boolean(plan.replyTo || replySegment?.data?.id));
       const shouldAt =
         atMode === "always" ||
-        (atMode === "auto" && directedToUser);
-      if (shouldQuote && replySegment?.data?.id) {
+        (atMode === "auto" &&
+          Boolean(plan.at || directedToUser));
+      const replyTo = plan.replyTo || replySegment?.data?.id;
+      const atTarget = plan.at || event.user_id;
+      if (shouldQuote && replyTo) {
         segments.push({
           type: "reply",
-          data: { id: String(replySegment.data.id) },
+          data: { id: String(replyTo) },
         });
       }
-      if (shouldAt && event.user_id) {
+      if (shouldAt && atTarget) {
         segments.push({
           type: "at",
-          data: { qq: String(event.user_id) },
+          data: { qq: String(atTarget) },
         });
       }
     }
@@ -712,7 +773,13 @@ export default class AiBotPlugin {
       llmResult?.data?.choices?.[0]?.text ||
       llmResult?.data?.content ||
       "";
-    const reply = String(rawReply || "")
+    const plan =
+      parseReplyPlan(rawReply, config.maxReplySentences || 2)[0] || null;
+    const fallbackReply = sanitizeChatText(
+      rawReply,
+      config.maxReplySentences || 2,
+    );
+    const reply = String(plan?.text || fallbackReply || "")
       .trim()
       .replace(/^(?:烟散|Bot|AI Bot|我)\s*[:：]\s*/i, "")
       .trim();
@@ -721,7 +788,12 @@ export default class AiBotPlugin {
       return null;
     }
     const limited = reply.slice(0, config.maxReplyLength || 2000);
-    const message = this.buildReplySegments(event, limited, config);
+    const message = this.buildReplySegments(
+      event,
+      limited,
+      config,
+      plan || {},
+    );
     const action =
       event.message_type === "group" ? "send_group_msg" : "send_private_msg";
     const sceneId = event.group_id ?? event.user_id ?? context.scene.id;

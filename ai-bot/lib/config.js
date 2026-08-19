@@ -48,6 +48,7 @@ export const CONFIG_SCHEMA = {
       enum: ["auto", "always", "never"],
       default: "auto",
     },
+    maxReplySentences: { type: "integer", default: 2 },
   },
 };
 

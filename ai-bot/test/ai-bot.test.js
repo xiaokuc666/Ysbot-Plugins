@@ -328,6 +328,37 @@ test("auto reply mode omits at when reply is not addressed", async (t) => {
   );
 });
 
+test("structured reply plan strips actions and caps sentences", async (t) => {
+  const harness = await makeHarness(t, {
+    defaultEnabled: true,
+    defaultReplyMode: "mention",
+    replyWithAt: "auto",
+    replyWithQuote: "auto",
+    maxReplySentences: 2,
+  });
+  const calls = installFakes(harness, [
+    '{"messages":[{"text":"（歪头）在的，你找我啊。这里是第二句。这里是第三句。","at":"200000001","replyTo":"123"}]}',
+  ]);
+
+  harness.eventBus.emit("onebot.message", {
+    message_type: "group",
+    group_id: "100000001",
+    user_id: "200000001",
+    sender: { nickname: "Alice", role: "member" },
+    message: [{ type: "at", data: { qq: "bot" } }],
+    raw_message: "@bot",
+  });
+
+  await waitFor(() => calls.some((call) => call.kind === "action"));
+  const send = calls.find((call) => call.kind === "action");
+  assert.equal(send.params.params.message[0].type, "reply");
+  assert.equal(send.params.params.message[1].type, "at");
+  assert.equal(
+    send.params.params.message[2].data.text,
+    "在的，你找我啊。这里是第二句。",
+  );
+});
+
 test("direct reply includes memory, history and event context", async (t) => {
   const harness = await makeHarness(t, {
     defaultEnabled: true,
