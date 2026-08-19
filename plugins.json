@@ -16,13 +16,13 @@
     {
       "id": "protocol-onebot",
       "name": "OneBot Protocol",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "type": "protocol",
       "description": "Generic OneBot v11 protocol plugin for YSbot Core",
       "adminConsole": true,
-      "file": "protocol-onebot/dist/protocol-onebot-1.0.1.plg",
-      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/protocol-onebot/dist/protocol-onebot-1.0.1.plg",
-      "sha256": "92903ff31a1fe12cc4c1646ac108af24f371029e52600e78fc937e92270a8b99"
+      "file": "protocol-onebot/dist/protocol-onebot-1.0.2.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/protocol-onebot/dist/protocol-onebot-1.0.2.plg",
+      "sha256": "3f121cf2818935fe0a2bd668b917f85fda982130ae4bc3520b01b19905a5ee35"
     },
     {
       "id": "action-qq",

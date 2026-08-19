@@ -2,7 +2,7 @@
   "id": "protocol-onebot",
   "type": "protocol",
   "name": "OneBot Protocol",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Generic OneBot v11 protocol plugin for YSbot Core",
   "enabled": true,
   "role": "protocol",

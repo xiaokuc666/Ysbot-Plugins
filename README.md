@@ -23,7 +23,7 @@ node tools/ysbot.js pack
 | 插件 | 版本 | 说明 |
 | --- | --- | --- |
 | [admin-console](admin-console) | 1.0.3 | YSbot 插件管理后台 |
-| [protocol-onebot](protocol-onebot) | 1.0.1 | 通用 OneBot v11 协议插件 |
+| [protocol-onebot](protocol-onebot) | 1.0.2 | 通用 OneBot v11 协议插件 |
 | [action-qq](action-qq) | 1.0.1 | 通用 QQ 动作插件 |
 | [llm-bridge](llm-bridge) | 0.2.0 | 统一大模型接入层 |
 | [ai-bot](ai-bot) | 0.5.0 | QQ AI 聊天机器人业务插件 |

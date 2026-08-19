@@ -8,7 +8,7 @@
 
 ## 调用入口
 
-v1.0.1 使用：
+v1.0.0 使用：
 
 ```js
 await ctx.registry.invoke("protocol-onebot", {

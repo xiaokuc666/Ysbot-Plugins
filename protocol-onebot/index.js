@@ -155,9 +155,10 @@ export default class ProtocolOnebotPlugin {
       onEvent: (event) => this.handleOneBotEvent(event),
       onStatus: (patch) => {
         if (patch.connected) {
+          this.reconnectManager.stop();
+          this.reconnectManager.reset();
           this.ctx.protocol.setConnected(true);
           this.log.info("ws-client", `connected ${this.config.wsUrl}`);
-          this.reconnectManager.reset();
           this.statusStore.update({ ...patch, lastError: null });
         } else {
           this.ctx.protocol.setConnected(false);
@@ -216,6 +217,7 @@ export default class ProtocolOnebotPlugin {
   }
 
   disconnect() {
+    this.reconnectManager.stop();
     this.client?.close();
     this.client = null;
     if (this.dispatcher) this.dispatcher.wsClient = null;
