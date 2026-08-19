@@ -49,13 +49,13 @@
     {
       "id": "ai-bot",
       "name": "AI Bot",
-      "version": "0.5.5",
+      "version": "0.5.6",
       "type": "capability",
       "description": "QQ AI chat bot business plugin",
       "adminConsole": true,
-      "file": "ai-bot/dist/ai-bot-0.5.5.plg",
-      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/ai-bot/dist/ai-bot-0.5.5.plg",
-      "sha256": "28a2017347e2e27b707bb050c91d98fbaabe8f714a21b13af0258a406473072c"
+      "file": "ai-bot/dist/ai-bot-0.5.6.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/ai-bot/dist/ai-bot-0.5.6.plg",
+      "sha256": "1385a6919062b3acdebfa7fe6a0c911bf396f438e6f09cc9ac2eadf285059739"
     },
     {
       "id": "memory-store",

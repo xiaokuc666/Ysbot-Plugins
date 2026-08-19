@@ -5,7 +5,7 @@ QQ AI 聊天机器人业务插件，负责接收消息、决定是否回复、�
 - ID: `ai-bot`
 - Type: `capability`
 - Role: `capability`
-- Version: `0.5.5`
+- Version: `0.5.6`
 - 依赖: `protocol-onebot >= 1.0.0`、`action-qq >= 1.0.0`、`llm-bridge >= 0.2.0`
 
 ## 功能

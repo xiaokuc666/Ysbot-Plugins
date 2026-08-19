@@ -116,6 +116,8 @@ export default class AiBotPlugin {
     this.cooldowns = new Map();
     this.directAttentionUntil = new Map();
     this.directAttentionLastFollow = new Map();
+    this.lastProactiveAt = new Map();
+    this.lastHumanMessageAt = new Map();
     this.seenGroups = new Set();
     this.periodicTimer = null;
     this.unsubscribe = ctx.eventBus.on("onebot.message", (event) => {
@@ -176,6 +178,7 @@ export default class AiBotPlugin {
       this.log.debug("ai", "group disabled", { traceId, groupId });
       return;
     }
+    this.lastHumanMessageAt.set(groupId, Date.now());
     if (config.curiosityEnabled && this.ctx.curiosity) {
       await this.appendIncomingHistory(event, config);
       await this.submitCuriosity(event, config, traceId);
@@ -820,6 +823,7 @@ export default class AiBotPlugin {
         traceId,
       ),
     });
+    this.lastProactiveAt.set(String(context.scene.id), Date.now());
     await this.appendHistory(
       context.scene,
       {
@@ -896,6 +900,12 @@ export default class AiBotPlugin {
       config.curiosityPeriodicProbeIntervalMs || 300000;
     for (const groupId of groups) {
       if (!groupEnabled(config, groupId)) continue;
+      if (this.isProactiveSilenced(groupId, config)) {
+        this.log.debug("ai", "proactive silenced: waiting for human reply", {
+          groupId,
+        });
+        continue;
+      }
       const shouldAct =
         Math.random() <
         Number(config.curiosityPeriodicProbeProbability || 0);
@@ -907,6 +917,13 @@ export default class AiBotPlugin {
         payload: { traceId: generateTraceId(), source: "periodic" },
       });
     }
+  }
+
+  isProactiveSilenced(groupId, config) {
+    if (config.proactiveSilenceEnabled === false) return false;
+    const lastProactive = this.lastProactiveAt.get(String(groupId)) || 0;
+    const lastHuman = this.lastHumanMessageAt.get(String(groupId)) || 0;
+    return lastProactive > 0 && lastProactive > lastHuman;
   }
 
   async replyToMessage(event, config, traceId) {
@@ -1126,6 +1143,8 @@ export default class AiBotPlugin {
     this.disposed = true;
     this.directAttentionUntil.clear();
     this.directAttentionLastFollow.clear();
+    this.lastProactiveAt.clear();
+    this.lastHumanMessageAt.clear();
     if (this.periodicTimer) {
       clearTimeout(this.periodicTimer);
       this.periodicTimer = null;

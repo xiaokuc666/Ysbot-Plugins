@@ -129,6 +129,11 @@
           "maximum": 1,
           "title": "群活跃随机回复概率"
         },
+        "proactiveSilenceEnabled": {
+          "type": "boolean",
+          "default": true,
+          "title": "冷群主动闭嘴"
+        },
         "memoryRecallLimit": {
           "type": "integer",
           "default": 10,

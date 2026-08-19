@@ -328,6 +328,26 @@ test("auto reply mode omits at when reply is not addressed", async (t) => {
   );
 });
 
+test("proactive silence waits for human reply", async (t) => {
+  const harness = await makeHarness(t, {
+    proactiveSilenceEnabled: true,
+  });
+  const instance = harness.registry.get("ai-bot").instance;
+  const config = await harness.ctx.pluginConfig.get("ai-bot", CONFIG_SCHEMA);
+
+  instance.lastProactiveAt.set("100000001", Date.now());
+  assert.equal(
+    instance.isProactiveSilenced("100000001", config),
+    true,
+  );
+
+  instance.lastHumanMessageAt.set("100000001", Date.now() + 1000);
+  assert.equal(
+    instance.isProactiveSilenced("100000001", config),
+    false,
+  );
+});
+
 test("structured reply plan strips actions and caps sentences", async (t) => {
   const harness = await makeHarness(t, {
     defaultEnabled: true,

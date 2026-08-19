@@ -28,6 +28,7 @@ export const CONFIG_SCHEMA = {
     curiosityPeriodicProbeIntervalMs: { type: "integer", default: 300000 },
     curiosityPeriodicProbeProbability: { type: "number", default: 0.1 },
     curiosityRandomReplyProbability: { type: "number", default: 0.05 },
+    proactiveSilenceEnabled: { type: "boolean", default: true },
     memoryRecallLimit: { type: "integer", default: 10 },
     memoryMaxInjection: { type: "integer", default: 2000 },
     historyMaxEntries: { type: "integer", default: 20 },
