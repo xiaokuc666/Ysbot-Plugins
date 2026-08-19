@@ -1,16 +1,12 @@
 {
-  "id": "ai-bot",
+  "id": "identity-store",
   "type": "capability",
-  "name": "AI Bot",
-  "version": "0.4.0",
-  "description": "QQ AI chat bot business plugin",
+  "name": "Identity Store",
+  "version": "0.1.0",
+  "description": "AI bot self identity, interaction journal and identity context retrieval",
   "enabled": true,
   "role": "capability",
-  "dependencies": [
-    "protocol-onebot",
-    "action-qq",
-    "llm-bridge"
-  ],
+  "dependencies": [],
   "permissions": {
     "adminOnly": false,
     "enabledGroups": []

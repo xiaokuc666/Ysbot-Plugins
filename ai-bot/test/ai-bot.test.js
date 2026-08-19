@@ -125,6 +125,32 @@ function installMemoryStore(harness, calls) {
   });
 }
 
+function installIdentityStore(harness, calls) {
+  harness.registry.register({
+    id: "identity-store",
+    type: "capability",
+    name: "Fake Identity",
+    version: "0.1.0",
+    enabled: true,
+    status: "ready",
+    manifest: { id: "identity-store", dependencies: [] },
+    async invoke(params) {
+      calls.push({ kind: "identity", params });
+      if (params.action === "context") {
+        return {
+          ok: true,
+          data: {
+            identityContext: "<identity_context>我是小德</identity_context>",
+            sourceIds: ["identity-card"],
+          },
+        };
+      }
+      return { ok: true, data: {} };
+    },
+    async dispose() {},
+  });
+}
+
 test("ai-bot registers log source", async (t) => {
   const harness = await makeHarness(t);
   assert.ok(harness.logging.list().some((source) => source.id === "ai-bot"));
@@ -181,6 +207,45 @@ test("reply strips speaker prefix before sending", async (t) => {
     (segment) => segment.type === "text",
   ).data.text;
   assert.equal(text, "你好呀");
+});
+
+test("ai-bot injects identity context and journals messages", async (t) => {
+  const harness = await makeHarness(t, {
+    defaultEnabled: true,
+    defaultReplyMode: "mention",
+  });
+  const calls = installFakes(harness);
+  installIdentityStore(harness, calls);
+
+  harness.eventBus.emit("onebot.message", {
+    message_type: "group",
+    group_id: "100000001",
+    user_id: "200000001",
+    sender: { role: "member" },
+    message: [
+      { type: "at", data: { qq: "bot" } },
+      { type: "text", data: { text: "你是谁" } },
+    ],
+    raw_message: "@bot 你是谁",
+  });
+
+  await waitFor(() => calls.some((call) => call.kind === "action"));
+  const llmCall = calls.find((call) => call.kind === "llm");
+  assert.ok(
+    llmCall.params.params.messages.some((message) =>
+      String(message.content || "").includes("我是小德"),
+    ),
+  );
+  assert.ok(
+    calls.some(
+      (call) => call.kind === "identity" && call.params.action === "context",
+    ),
+  );
+  assert.ok(
+    calls.some(
+      (call) => call.kind === "identity" && call.params.action === "journal",
+    ),
+  );
 });
 
 test("direct reply includes memory, history and event context", async (t) => {

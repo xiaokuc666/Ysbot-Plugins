@@ -26,8 +26,9 @@ node tools/ysbot.js pack
 | [protocol-onebot](protocol-onebot) | 1.0.1 | 通用 OneBot v11 协议插件 |
 | [action-qq](action-qq) | 1.0.1 | 通用 QQ 动作插件 |
 | [llm-bridge](llm-bridge) | 0.2.0 | 统一大模型接入层 |
-| [ai-bot](ai-bot) | 0.3.1 | QQ AI 聊天机器人业务插件 |
+| [ai-bot](ai-bot) | 0.4.0 | QQ AI 聊天机器人业务插件 |
 | [memory-store](memory-store) | 1.0.0 | QQ AI bot 长期记忆系统 |
+| [identity-store](identity-store) | 0.1.0 | AI bot 自我身份与交互日志 |
 
 ## 当前能力
 
@@ -42,7 +43,7 @@ node tools/ysbot.js pack
 - 后台配置页提供 `测试当前 Provider` 按钮。
 - 配置修改后立即生效，日志带 traceId。
 
-### ai-bot 0.3.1
+### ai-bot 0.4.0
 
 - 监听 QQ 群聊和私聊事件。
 - 支持 @、回复和普通消息回复策略。
@@ -51,6 +52,7 @@ node tools/ysbot.js pack
 - 支持 memory-store 观察/回忆联动，插件未安装时自动跳过。
 - 直接回复和好奇心回复共用统一上下文管线。
 - 回复前注入近期记忆、短期会话历史和当前事件上下文。
+- 可选接入 identity-store，注入身份上下文并记录身份交互日志。
 - 支持执行 admin-console 配置的 LLM 工具。
 - 群内回复支持引用原消息和 @ 对方。
 - 支持管理员记忆指令：查看、写笔记、清空。
@@ -66,6 +68,14 @@ node tools/ysbot.js pack
 - 支持管理员后台查看、筛选、写笔记、删除、清空。
 - 支持会话摘要。
 - 普通成员不可查看记忆内容。
+
+### identity-store 0.1.0
+
+- 静态身份卡和动态 self-model。
+- 交互事件日志与身份上下文检索。
+- 自我反思、快照生成和回滚。
+- admin-console 身份管理页。
+- 普通用户不可读取身份存储。
 
 ## 目录规范
 

@@ -371,6 +371,34 @@ export default class AiBotPlugin {
     };
   }
 
+  async loadIdentityContext(event, config, traceId) {
+    if (!this.hasPlugin("identity-store")) return null;
+    const scene = this.eventScene(event);
+    try {
+      const result = await this.ctx.registry.invoke("identity-store", {
+        action: "context",
+        params: {
+          groupId:
+            scene.type === "group" ? String(scene.id) : undefined,
+          userId:
+            scene.type === "private" ? String(scene.id) : undefined,
+          query: this.extractText(event),
+        },
+        context: {
+          actor: this.botActor(),
+          scene,
+          traceId,
+        },
+      });
+      return result?.data || null;
+    } catch (error) {
+      this.log.warn("ai", `identity context failed: ${error.message}`, {
+        traceId,
+      });
+      return null;
+    }
+  }
+
   async buildReplyContext(event, config, traceId) {
     const scene = this.eventScene(event);
     const sceneKey = `${scene.type}:${scene.id}`;
@@ -393,6 +421,13 @@ export default class AiBotPlugin {
         }\n\n回复时直接输出你要说的话，不要添加“烟散：”“Bot：”之类的说话人前缀。`,
       },
     ];
+    const identity = await this.loadIdentityContext(event, config, traceId);
+    if (identity?.identityContext) {
+      messages.push({
+        role: "system",
+        content: identity.identityContext,
+      });
+    }
     if (memory) {
       messages.push({
         role: "system",
@@ -497,6 +532,30 @@ export default class AiBotPlugin {
         },
         config,
       );
+      if (this.hasPlugin("identity-store")) {
+        try {
+          await this.ctx.registry.invoke("identity-store", {
+            action: "journal",
+            params: {
+              scene: context.scene,
+              userId: String(event.user_id),
+              role: String(event.sender?.role || "member"),
+              type: this.isMentioned(event) ? "mention" : "message",
+              summary: this.extractText(event).slice(0, 200),
+              tags: [],
+            },
+            context: {
+              actor: this.botActor(),
+              scene: context.scene,
+              traceId,
+            },
+          });
+        } catch (error) {
+          this.log.warn("ai", `identity journal failed: ${error.message}`, {
+            traceId,
+          });
+        }
+      }
     }
     this.log.info("ai", "context assembled", {
       traceId,

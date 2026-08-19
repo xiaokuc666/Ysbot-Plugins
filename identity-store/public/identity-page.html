@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/api/admin-console/design-tokens.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px; background: var(--ysbot-bg); color: var(--ysbot-text); font-family: var(--ysbot-font); }
+    h1 { margin: 0 0 16px; font-size: 20px; }
+    textarea, button, input { border: 1px solid var(--ysbot-border); border-radius: var(--ysbot-radius); background: var(--ysbot-surface); color: var(--ysbot-text); padding: 7px 10px; font: inherit; }
+    textarea { width: 100%; min-height: 260px; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .primary { background: var(--ysbot-primary); color: #fff; border-color: var(--ysbot-primary); }
+    .danger { color: var(--ysbot-danger); border-color: var(--ysbot-danger); }
+    .status { min-height: 22px; margin: 8px 0; color: var(--ysbot-muted); }
+    .status.ok { color: #15803d; }
+    .status.error { color: var(--ysbot-danger); }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--ysbot-surface); border: 1px solid var(--ysbot-border); border-radius: var(--ysbot-radius); padding: 10px; }
+  </style>
+</head>
+<body>
+  <h1>身份管理</h1>
+  <div id="status" class="status"></div>
+  <textarea id="card" placeholder="身份卡 JSON"></textarea>
+  <div class="toolbar">
+    <button id="save" class="primary">保存身份卡</button>
+    <button id="reflect">触发反思</button>
+    <button id="rollback">回滚快照</button>
+    <button id="reset" class="danger">重置</button>
+  </div>
+  <h2>Self Model</h2>
+  <pre id="self">暂无</pre>
+  <h2>状态</h2>
+  <pre id="stats">暂无</pre>
+  <script>
+    const token = window.__YSBOT_ADMIN_TOKEN__ || "";
+    const base = "/api/plugins/identity-store/admin/identity";
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...(options.headers || {})
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "request failed");
+      return data;
+    }
+    function setStatus(message, type = "") {
+      const node = document.querySelector("#status");
+      node.textContent = message || "";
+      node.className = `status ${type}`;
+    }
+    async function load() {
+      try {
+        const data = await api(`${base}.json`);
+        document.querySelector("#card").value = JSON.stringify(data.card, null, 2);
+        document.querySelector("#self").textContent = JSON.stringify(data.self, null, 2);
+        document.querySelector("#stats").textContent = JSON.stringify(data.stats, null, 2);
+        setStatus("已加载", "ok");
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+    }
+    async function save() {
+      try {
+        const patch = JSON.parse(document.querySelector("#card").value);
+        const data = await api(`${base}/card`, { method: "POST", body: JSON.stringify({ patch }) });
+        document.querySelector("#card").value = JSON.stringify(data.card, null, 2);
+        setStatus("身份卡已保存", "ok");
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+    }
+    async function reflect() {
+      try {
+        const data = await api(`${base}/reflect`, { method: "POST", body: "{}" });
+        setStatus(data.reflected ? `反思完成：${data.journalCount} 条` : `未达阈值：${data.journalCount}/${data.minJournalEntries}`, "ok");
+        load();
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+    }
+    async function rollback() {
+      if (!window.confirm("确认回滚到最近快照？")) return;
+      try {
+        await api(`${base}/rollback`, { method: "POST", body: "{}" });
+        setStatus("已回滚", "ok");
+        load();
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+    }
+    async function resetIdentity() {
+      if (!window.confirm("确认重置身份卡、self-model 和日志？")) return;
+      try {
+        await api(`${base}/reset`, { method: "POST", body: "{}" });
+        setStatus("已重置", "ok");
+        load();
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+    }
+    document.querySelector("#save").addEventListener("click", save);
+    document.querySelector("#reflect").addEventListener("click", reflect);
+    document.querySelector("#rollback").addEventListener("click", rollback);
+    document.querySelector("#reset").addEventListener("click", resetIdentity);
+    load();
+  </script>
+</body>
+</html>

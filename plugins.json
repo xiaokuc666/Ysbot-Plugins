@@ -49,13 +49,13 @@
     {
       "id": "ai-bot",
       "name": "AI Bot",
-      "version": "0.3.1",
+      "version": "0.4.0",
       "type": "capability",
       "description": "QQ AI chat bot business plugin",
       "adminConsole": true,
-      "file": "ai-bot/dist/ai-bot-0.3.1.plg",
-      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/ai-bot/dist/ai-bot-0.3.1.plg",
-      "sha256": "c7885bad335e1f3422cf7b0ed4ea95d161cf107d75ea45201bbefe431f45a7b2"
+      "file": "ai-bot/dist/ai-bot-0.4.0.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/ai-bot/dist/ai-bot-0.4.0.plg",
+      "sha256": "50b574bea2e27e08a408304d65df0a6dd05e37aba7024feeb7f34c6fe3892652"
     },
     {
       "id": "memory-store",
@@ -67,6 +67,17 @@
       "file": "memory-store/dist/memory-store-1.0.0.plg",
       "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/memory-store/dist/memory-store-1.0.0.plg",
       "sha256": "e3dcaa84b22ddd85761da5ae2acefc3bf144d70979ad31f2cb3e0f0eb099df6f"
+    },
+    {
+      "id": "identity-store",
+      "name": "Identity Store",
+      "version": "0.1.0",
+      "type": "capability",
+      "description": "AI bot self identity, interaction journal and identity context retrieval",
+      "adminConsole": true,
+      "file": "identity-store/dist/identity-store-0.1.0.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/identity-store/dist/identity-store-0.1.0.plg",
+      "sha256": "bfacb0cbba2360b2c711ed7bce0a25013552377b50517f3fac98a78bfc33e901"
     }
   ]
 }
