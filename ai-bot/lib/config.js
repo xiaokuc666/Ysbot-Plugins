@@ -34,8 +34,9 @@ export const CONFIG_SCHEMA = {
     historyMaxAgeMs: { type: "integer", default: 3600000 },
     timeZone: { type: "string", default: "Asia/Shanghai" },
     directAttentionWindowMs: { type: "integer", default: 30000 },
+    activeConversationIdleMs: { type: "integer", default: 120000 },
     directAttentionFollowCooldownMs: { type: "integer", default: 5000 },
-    directAttentionFollowProbability: { type: "number", default: 0.5 },
+    directAttentionFollowProbability: { type: "number", default: 0.8 },
     llmTools: {
       type: "array",
       default: [

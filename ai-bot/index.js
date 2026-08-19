@@ -254,7 +254,7 @@ export default class AiBotPlugin {
     if (isDirect) {
       this.directAttentionUntil.set(
         groupId,
-        Date.now() + (config.directAttentionWindowMs || 30000),
+        Date.now() + (config.activeConversationIdleMs || 120000),
       );
       return this.submitMotivation({
         type: "direct_interaction",
@@ -269,6 +269,10 @@ export default class AiBotPlugin {
     const now = Date.now();
     const attentionUntil = this.directAttentionUntil.get(groupId) || 0;
     if (now < attentionUntil) {
+      this.directAttentionUntil.set(
+        groupId,
+        now + (config.directAttentionWindowMs || 30000),
+      );
       const last = this.directAttentionLastFollow.get(groupId) || 0;
       const followCooldown = Math.max(
         1000,

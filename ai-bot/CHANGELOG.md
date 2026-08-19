@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.5
+
+- @ 后注意力窗口改为滚动式：对话持续时窗口不断延长。
+- 新增 `activeConversationIdleMs`，默认 120 秒无消息才掉注意力。
+- 默认跟随概率提高到 0.8。
+
 ## 0.5.4
 
 - 默认启用 `get_group_list`、`get_friend_list`、`get_login_info`、`get_group_member_info` 查询工具。

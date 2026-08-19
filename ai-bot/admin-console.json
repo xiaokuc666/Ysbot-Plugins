@@ -167,7 +167,14 @@
           "default": 30000,
           "minimum": 0,
           "maximum": 600000,
-          "title": "@ 后注意力窗口"
+          "title": "@ 后滚动注意力窗口"
+        },
+        "activeConversationIdleMs": {
+          "type": "integer",
+          "default": 120000,
+          "minimum": 10000,
+          "maximum": 3600000,
+          "title": "对话空闲判定"
         },
         "directAttentionFollowCooldownMs": {
           "type": "integer",
@@ -178,7 +185,7 @@
         },
         "directAttentionFollowProbability": {
           "type": "number",
-          "default": 0.5,
+          "default": 0.8,
           "minimum": 0,
           "maximum": 1,
           "title": "@ 后关注概率"
