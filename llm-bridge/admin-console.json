@@ -37,6 +37,18 @@
           "default": true,
           "title": "允许 Tool Call 透传"
         },
+        "allowToolExecution": {
+          "type": "boolean",
+          "default": true,
+          "title": "允许执行 Tool Call"
+        },
+        "defaultMaxToolRounds": {
+          "type": "integer",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "title": "默认最大工具轮数"
+        },
         "providers": {
           "type": "array",
           "default": [

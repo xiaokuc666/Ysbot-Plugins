@@ -22,6 +22,70 @@ function generateTraceId() {
   return `trace-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 }
 
+function normalizeToolDefinitions(tools) {
+  if (!Array.isArray(tools)) return tools;
+  return tools.map((tool) => {
+    if (tool?.type === "function" && tool.function?.name) return tool;
+    if (tool?.name && tool?.plugin) {
+      return {
+        type: "function",
+        function: {
+          name: tool.name,
+          description: tool.description || "",
+          parameters: {
+            type: "object",
+            properties: {},
+            additionalProperties: true,
+          },
+        },
+      };
+    }
+    return tool;
+  });
+}
+
+function toolCallName(toolCall) {
+  return (
+    toolCall?.function?.name ||
+    toolCall?.name ||
+    toolCall?.tool_name ||
+    null
+  );
+}
+
+function parseToolArguments(toolCall) {
+  const raw =
+    toolCall?.function?.arguments ??
+    toolCall?.arguments ??
+    toolCall?.parameters;
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return { _raw: raw };
+    }
+  }
+  if (raw && typeof raw === "object") return raw;
+  return {};
+}
+
+function isAdminContext(context) {
+  return Boolean(
+    context?.actor?.admin === true ||
+      context?.actor?.origin === "management" ||
+      context?.approved === true ||
+      (Array.isArray(context?.actor?.roles) &&
+        context.actor.roles.includes("admin")),
+  );
+}
+
+function isWriteToolAction(action) {
+  const value = String(action || "");
+  return ["send_", "set_", "delete_", "clear", "forget", "note"].some(
+    (prefix) => value.startsWith(prefix),
+  );
+}
+
 export default class LlmBridgePlugin {
   async init(ctx) {
     this.ctx = ctx;
@@ -211,7 +275,7 @@ export default class LlmBridgePlugin {
 
       const result =
         action === "chat"
-          ? await this.chat(llmParams, traceId)
+          ? await this.chat(llmParams, context, traceId)
           : await this.completion(llmParams, traceId);
       this.stats.ok += 1;
       this.stats.lastError = null;
@@ -278,7 +342,7 @@ export default class LlmBridgePlugin {
     }));
   }
 
-  async chat(params, traceId) {
+  async chat(params, context = {}, traceId) {
     const providerId = params.provider || this.config.defaultProvider;
     const provider = providerDefinition(this.config, providerId);
     assertProviderConfigured(provider);
@@ -313,7 +377,10 @@ export default class LlmBridgePlugin {
     }
     const payload = { model, messages: params.messages };
     this.applyCommonParams(payload, params);
-    if (Array.isArray(params.tools) && params.tools.length) {
+    const toolDefinitions = normalizeToolDefinitions(params.tools);
+    const hasTools =
+      Array.isArray(toolDefinitions) && toolDefinitions.length > 0;
+    if (hasTools) {
       if (!this.config.allowTools) {
         throw new LLMBridgeError(
           ERROR_CODES.INVALID_PARAMS,
@@ -321,11 +388,103 @@ export default class LlmBridgePlugin {
           { provider: providerId },
         );
       }
-      payload.tools = params.tools;
+      payload.tools = toolDefinitions;
       if (params.tool_choice !== undefined) {
         payload.tool_choice = params.tool_choice;
       }
     }
+
+    if (params.executeTools !== true) {
+      const data = await this.sendChatRequest({
+        providerId,
+        model,
+        payload,
+        params,
+        provider,
+        apiKey,
+        traceId,
+      });
+      return { provider: providerId, model, data };
+    }
+
+    if (!this.config.allowToolExecution) {
+      throw new LLMBridgeError(
+        ERROR_CODES.INVALID_PARAMS,
+        "tool execution is disabled by allowToolExecution",
+        { provider: providerId },
+      );
+    }
+
+    const maxToolRounds = Math.max(
+      1,
+      Math.min(
+        10,
+        Number(params.maxToolRounds ?? this.config.defaultMaxToolRounds) || 3,
+      ),
+    );
+    const toolTrace = [];
+    let messages = params.messages;
+    let data = await this.sendChatRequest({
+      providerId,
+      model,
+      payload,
+      params,
+      provider,
+      apiKey,
+      traceId,
+    });
+
+    for (let round = 0; round < maxToolRounds; round += 1) {
+      if (!Array.isArray(data.toolCalls) || data.toolCalls.length === 0) {
+        break;
+      }
+      const assistantMessage = data.choices?.[0]?.message;
+      if (assistantMessage) messages = [...messages, assistantMessage];
+      for (const toolCall of data.toolCalls) {
+        const executed = await this.executeToolCall(
+          toolCall,
+          params.tools || [],
+          context,
+          traceId,
+        );
+        toolTrace.push(executed.trace);
+        messages.push({
+          role: "tool",
+          tool_call_id: executed.toolCallId,
+          content: executed.content,
+        });
+      }
+      const nextPayload = { model, messages };
+      this.applyCommonParams(nextPayload, params);
+      if (hasTools) nextPayload.tools = toolDefinitions;
+      data = await this.sendChatRequest({
+        providerId,
+        model,
+        payload: nextPayload,
+        params,
+        provider,
+        apiKey,
+        traceId,
+      });
+    }
+
+    return {
+      provider: providerId,
+      model,
+      data: { ...data, executedTools: true, toolTrace },
+      toolTrace,
+    };
+  }
+
+  async sendChatRequest({
+    providerId,
+    model,
+    payload,
+    params,
+    provider,
+    apiKey,
+    traceId,
+  }) {
     const raw = await this.httpClient.send({
       action: "chat",
       provider,
@@ -345,7 +504,111 @@ export default class LlmBridgePlugin {
       model,
       toolCalls: Boolean(data.toolCalls),
     });
-    return { provider: providerId, model, data };
+    return data;
+  }
+
+  async executeToolCall(toolCall, tools, context, traceId) {
+    const name = toolCallName(toolCall);
+    const toolCallId =
+      toolCall?.id || toolCall?.call_id || `call-${Date.now()}`;
+    const tool = Array.isArray(tools)
+      ? tools.find(
+          (item) =>
+            String(item?.name || item?.function?.name || "") === String(name || ""),
+        )
+      : null;
+    if (!name || !tool) {
+      const error = new LLMBridgeError(
+        ERROR_CODES.TOOL_NOT_REGISTERED,
+        `Tool is not registered: ${name || "(unknown)"}`,
+      );
+      return this.toolExecutionResult(toolCallId, name, null, null, error);
+    }
+    const plugin = tool.plugin || tool.function?.plugin;
+    const action = tool.action || tool.function?.action;
+    if (!plugin || !action) {
+      const error = new LLMBridgeError(
+        ERROR_CODES.TOOL_NOT_REGISTERED,
+        `Tool has no plugin/action binding: ${name}`,
+      );
+      return this.toolExecutionResult(toolCallId, name, plugin, action, error);
+    }
+    if (tool.adminOnly && !isAdminContext(context)) {
+      const error = new LLMBridgeError(
+        ERROR_CODES.TOOL_PERMISSION_DENIED,
+        `Tool requires admin permission: ${name}`,
+      );
+      return this.toolExecutionResult(toolCallId, name, plugin, action, error);
+    }
+    if (
+      isWriteToolAction(action) &&
+      (!context?.actor?.id || !context?.scene?.id)
+    ) {
+      const error = new LLMBridgeError(
+        ERROR_CODES.INVALID_CONTEXT,
+        `Tool requires actor and scene: ${name}`,
+      );
+      return this.toolExecutionResult(toolCallId, name, plugin, action, error);
+    }
+    const args = parseToolArguments(toolCall);
+    try {
+      const result = await this.ctx.registry.invoke(plugin, {
+        action,
+        params: args,
+        context: {
+          actor: context?.actor || null,
+          scene: context?.scene || null,
+          traceId,
+          approved: context?.approved,
+        },
+      });
+      this.log.info("tools", "tool ok", {
+        traceId,
+        toolName: name,
+        plugin,
+        action,
+      });
+      return this.toolExecutionResult(
+        toolCallId,
+        name,
+        plugin,
+        action,
+        null,
+        result,
+      );
+    } catch (error) {
+      const llmError = toLlmBridgeError(error, action, plugin);
+      this.log.warn("tools", `tool failed: ${llmError.message}`, {
+        traceId,
+        toolName: name,
+        plugin,
+        action,
+        code: llmError.code,
+      }, llmError);
+      return this.toolExecutionResult(
+        toolCallId,
+        name,
+        plugin,
+        action,
+        llmError,
+      );
+    }
+  }
+
+  toolExecutionResult(toolCallId, name, plugin, action, error, result = null) {
+    const trace = {
+      name,
+      plugin,
+      action,
+      status: error ? "error" : "ok",
+      ...(error
+        ? { code: error.code, error: error.message }
+        : { result }),
+    };
+    const content = error
+      ? JSON.stringify({ status: "error", code: error.code, error: error.message })
+      : JSON.stringify({ status: "ok", result });
+    return { toolCallId, content, trace };
   }
 
   async completion(params, traceId) {

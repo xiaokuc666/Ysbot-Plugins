@@ -5,8 +5,8 @@ QQ AI 聊天机器人业务插件，负责接收消息、决定是否回复、�
 - ID: `ai-bot`
 - Type: `capability`
 - Role: `capability`
-- Version: `0.2.2`
-- 依赖: `protocol-onebot >= 1.0.0`、`action-qq >= 1.0.0`、`llm-bridge >= 0.1.0`
+- Version: `0.3.0`
+- 依赖: `protocol-onebot >= 1.0.0`、`action-qq >= 1.0.0`、`llm-bridge >= 0.2.0`
 
 ## 功能
 
@@ -16,6 +16,10 @@ QQ AI 聊天机器人业务插件，负责接收消息、决定是否回复、�
 - 管理员私聊指令
 - 接入 Core CuriosityBus，支持直接互动、群活跃观察、定时群探针
 - 通过 memory-store 接口做记忆观察和回忆（插件未安装时自动跳过）
+- 短期会话历史写入 `ctx.dataDir/history.jsonl`
+- 直接回复和好奇心回复共用统一上下文管线
+- 支持执行 admin-console 配置的 LLM 工具
+- 群内回复支持引用原消息和 @ 对方
 - 日志 traceId 贯穿全链路
 
 ## 配置
@@ -45,6 +49,12 @@ QQ AI 聊天机器人业务插件，负责接收消息、决定是否回复、�
 | `curiosityRandomReplyProbability` | `0.05` | 群活跃随机回复概率 |
 | `memoryRecallLimit` | `10` | 记忆召回条数上限 |
 | `memoryMaxInjection` | `2000` | 记忆注入最大长度 |
+| `historyMaxEntries` | `20` | 短期历史最大条数 |
+| `historyMaxAgeMs` | `3600000` | 短期历史保留时间 |
+| `llmTools` | `[]` | LLM 工具定义 JSON |
+| `maxToolRounds` | `3` | 最大工具轮数 |
+| `replyWithAt` | `true` | 群内 @ 回复是否带 @ |
+| `replyWithQuote` | `true` | 群内回复是否引用原消息 |
 
 ## 好奇心总线
 

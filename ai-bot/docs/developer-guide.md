@@ -69,11 +69,41 @@ memory_update
 
 决策处理：
 
-- `shouldAct=true`：调用 llm-bridge 生成回复，再通过 action-qq 发送
+- `shouldAct=true`：走统一上下文管线，调用 llm-bridge 生成回复，再通过 action-qq 发送
 - `shouldAct=false`：如果安装了 memory-store，调用 `observe` 写入观察结果
 - 回复前如果安装了 memory-store，会调用 `recall` 获取近期记忆并注入 prompt
 
 memory-store 未安装时不会报错，会跳过记忆相关调用。
+
+## 统一上下文
+
+直接回复和好奇心回复共用同一套 `buildReplyContext -> llm-bridge -> action-qq` 管线。
+
+每次生成回复前会组装：
+
+- 系统提示词
+- 近期记忆
+- 当前事件上下文
+- 短期会话历史
+- 当前用户消息
+
+短期历史保存在 `ctx.dataDir/history.jsonl`，按 `group:<id>` 和 `private:<id>` 隔离，受 `historyMaxEntries` / `historyMaxAgeMs` 控制。
+
+## 工具调用
+
+`llmTools` 由 admin-console 配置，ai-bot 会把工具定义传给 llm-bridge 并开启 `executeTools: true`：
+
+```js
+{
+  name: "recall_memory",
+  description: "召回 bot 对群或用户的记忆",
+  plugin: "memory-store",
+  action: "recall",
+  adminOnly: false
+}
+```
+
+工具执行失败不会中断回复，工具调用链会记录在日志中。
 
 ## 管理员私聊指令
 
@@ -110,10 +140,10 @@ memory-store 未安装时，这些指令会返回友好提示，不会报错。
 await ctx.registry.invoke("llm-bridge", {
   action: "chat",
   params: {
-    messages: [
-      { role: "system", content: config.systemPrompt },
-      { role: "user", content: text }
-    ]
+    messages,
+    tools: config.llmTools || [],
+    executeTools: true,
+    maxToolRounds: config.maxToolRounds || 3
   },
   context: { actor, scene, traceId }
 });
@@ -126,7 +156,11 @@ await ctx.registry.invoke("action-qq", {
   action: "send_group_msg",
   params: {
     group_id,
-    message: [{ type: "text", data: { text: reply } }]
+    message: [
+      { type: "reply", data: { id: replyTo } },
+      { type: "at", data: { qq: user_id } },
+      { type: "text", data: { text: reply } }
+    ]
   },
   context: { actor, scene, traceId }
 });

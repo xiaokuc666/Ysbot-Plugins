@@ -142,6 +142,42 @@
           "minimum": 100,
           "maximum": 100000,
           "title": "记忆注入最大长度"
+        },
+        "historyMaxEntries": {
+          "type": "integer",
+          "default": 20,
+          "minimum": 1,
+          "maximum": 200,
+          "title": "短期历史最大条数"
+        },
+        "historyMaxAgeMs": {
+          "type": "integer",
+          "default": 3600000,
+          "minimum": 60000,
+          "maximum": 86400000,
+          "title": "短期历史保留时间"
+        },
+        "llmTools": {
+          "type": "array",
+          "default": [],
+          "title": "LLM 工具定义 JSON"
+        },
+        "maxToolRounds": {
+          "type": "integer",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "title": "最大工具轮数"
+        },
+        "replyWithAt": {
+          "type": "boolean",
+          "default": true,
+          "title": "@ 时回复带 @"
+        },
+        "replyWithQuote": {
+          "type": "boolean",
+          "default": true,
+          "title": "回复时引用原消息"
         }
       }
     },

@@ -105,6 +105,49 @@ function installFakeClient(harness, { chat = chatResponse(), completion = comple
   return requests;
 }
 
+function installSequenceClient(harness, chatResponses = []) {
+  const requests = [];
+  harness.registry.get("llm-bridge").instance.httpClient = new LlmHttpClient({
+    fetchImpl: async (url, options) => {
+      requests.push({ url, options });
+      const data = chatResponses.length
+        ? chatResponses.shift()
+        : chatResponse();
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return data;
+        },
+        async text() {
+          return "";
+        },
+      };
+    },
+  });
+  return requests;
+}
+
+function toolCallResponse(name, argumentsJson, content = "") {
+  return chatResponse({
+    choices: [
+      {
+        message: {
+          role: "assistant",
+          content,
+          tool_calls: [
+            {
+              id: `call-${name}`,
+              type: "function",
+              function: { name, arguments: argumentsJson },
+            },
+          ],
+        },
+      },
+    ],
+  });
+}
+
 test("llm-bridge loads and exposes configured providers", async (t) => {
   const harness = await makeHarness(t);
   const result = await harness.invoke({
@@ -235,6 +278,268 @@ test("llm-bridge passes tool calls through without executing", async (t) => {
   });
   assert.equal(result.data.toolCalls.length, 1);
   assert.equal(result.data.executedTools, false);
+});
+
+test("llm-bridge executes registered tool and returns final content", async (t) => {
+  const harness = await makeHarness(t);
+  const calls = [];
+  harness.registry.register({
+    id: "memory-store",
+    type: "capability",
+    name: "Fake Memory",
+    version: "1.0.0",
+    enabled: true,
+    status: "ready",
+    manifest: { id: "memory-store", dependencies: [] },
+    async invoke(params) {
+      calls.push(params);
+      return { ok: true, data: { entries: [{ content: "recalled" }] } };
+    },
+    async dispose() {},
+  });
+  const requests = installSequenceClient(harness, [
+    toolCallResponse("recall_memory", '{"groupId":"g1"}'),
+    chatResponse({
+      choices: [
+        {
+          message: { role: "assistant", content: "final" },
+          finish_reason: "stop",
+        },
+      ],
+    }),
+  ]);
+
+  const result = await harness.invoke({
+    action: "chat",
+    params: {
+      messages: [{ role: "user", content: "use tool" }],
+      tools: [
+        {
+          name: "recall_memory",
+          description: "Recall memory",
+          plugin: "memory-store",
+          action: "recall",
+          adminOnly: false,
+        },
+      ],
+      executeTools: true,
+    },
+    context: {
+      actor: { id: "ai-bot", admin: true, roles: ["admin"] },
+      scene: { type: "group", id: "g1" },
+      traceId: "trace-tool-exec",
+    },
+  });
+
+  assert.equal(requests.length, 2);
+  assert.equal(
+    JSON.parse(requests[0].options.body).tools[0].function.name,
+    "recall_memory",
+  );
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].action, "recall");
+  assert.equal(calls[0].params.groupId, "g1");
+  assert.equal(result.data.toolTrace[0].status, "ok");
+  assert.equal(result.data.choices[0].message.content, "final");
+  const secondBody = JSON.parse(requests[1].options.body);
+  assert.equal(
+    secondBody.messages.at(-1).role,
+    "tool",
+  );
+});
+
+test("llm-bridge reports unregistered tool without stopping", async (t) => {
+  const harness = await makeHarness(t);
+  const requests = installSequenceClient(harness, [
+    toolCallResponse("unknown_tool", "{}"),
+    chatResponse({
+      choices: [
+        {
+          message: { role: "assistant", content: "still ok" },
+          finish_reason: "stop",
+        },
+      ],
+    }),
+  ]);
+
+  const result = await harness.invoke({
+    action: "chat",
+    params: {
+      messages: [{ role: "user", content: "use tool" }],
+      tools: [],
+      executeTools: true,
+    },
+    context: {
+      actor: { id: "ai-bot", admin: true, roles: ["admin"] },
+      scene: { type: "group", id: "g1" },
+      traceId: "trace-tool-unknown",
+    },
+  });
+
+  assert.equal(requests.length, 2);
+  assert.equal(
+    result.data.toolTrace[0].code,
+    ERROR_CODES.TOOL_NOT_REGISTERED,
+  );
+  assert.equal(result.data.choices[0].message.content, "still ok");
+});
+
+test("llm-bridge rejects adminOnly tool for normal actor", async (t) => {
+  const harness = await makeHarness(t);
+  let actionCalled = false;
+  harness.registry.register({
+    id: "action-qq",
+    type: "action",
+    name: "Fake Action",
+    version: "1.0.0",
+    enabled: true,
+    status: "ready",
+    manifest: { id: "action-qq", dependencies: [] },
+    async invoke() {
+      actionCalled = true;
+      return { ok: true, data: { message_id: 1 } };
+    },
+    async dispose() {},
+  });
+  installSequenceClient(harness, [
+    toolCallResponse("send_group_msg", '{"group_id":"g1"}'),
+    chatResponse({
+      choices: [
+        {
+          message: { role: "assistant", content: "denied but continue" },
+          finish_reason: "stop",
+        },
+      ],
+    }),
+  ]);
+
+  const result = await harness.invoke({
+    action: "chat",
+    params: {
+      messages: [{ role: "user", content: "send" }],
+      tools: [
+        {
+          name: "send_group_msg",
+          plugin: "action-qq",
+          action: "send_group_msg",
+          adminOnly: true,
+        },
+      ],
+      executeTools: true,
+    },
+    context: {
+      actor: { id: "user-1", role: "member" },
+      scene: { type: "group", id: "g1" },
+      traceId: "trace-tool-admin",
+    },
+  });
+
+  assert.equal(actionCalled, false);
+  assert.equal(
+    result.data.toolTrace[0].code,
+    ERROR_CODES.TOOL_PERMISSION_DENIED,
+  );
+  assert.equal(result.data.choices[0].message.content, "denied but continue");
+});
+
+test("llm-bridge keeps conversation alive when tool execution fails", async (t) => {
+  const harness = await makeHarness(t);
+  harness.registry.register({
+    id: "action-qq",
+    type: "action",
+    name: "Fake Action",
+    version: "1.0.0",
+    enabled: true,
+    status: "ready",
+    manifest: { id: "action-qq", dependencies: [] },
+    async invoke() {
+      throw new Error("send failed");
+    },
+    async dispose() {},
+  });
+  installSequenceClient(harness, [
+    toolCallResponse("send_group_msg", '{"group_id":"g1"}'),
+    chatResponse({
+      choices: [
+        {
+          message: { role: "assistant", content: "continue after error" },
+          finish_reason: "stop",
+        },
+      ],
+    }),
+  ]);
+
+  const result = await harness.invoke({
+    action: "chat",
+    params: {
+      messages: [{ role: "user", content: "send" }],
+      tools: [
+        {
+          name: "send_group_msg",
+          plugin: "action-qq",
+          action: "send_group_msg",
+          adminOnly: false,
+        },
+      ],
+      executeTools: true,
+    },
+    context: {
+      actor: { id: "ai-bot", admin: true, roles: ["admin"] },
+      scene: { type: "group", id: "g1" },
+      traceId: "trace-tool-fail",
+    },
+  });
+
+  assert.equal(result.data.toolTrace[0].status, "error");
+  assert.equal(result.data.choices[0].message.content, "continue after error");
+});
+
+test("llm-bridge stops after maxToolRounds", async (t) => {
+  const harness = await makeHarness(t);
+  harness.registry.register({
+    id: "memory-store",
+    type: "capability",
+    name: "Fake Memory",
+    version: "1.0.0",
+    enabled: true,
+    status: "ready",
+    manifest: { id: "memory-store", dependencies: [] },
+    async invoke() {
+      return { ok: true, data: { entries: [] } };
+    },
+    async dispose() {},
+  });
+  const requests = installSequenceClient(harness, [
+    toolCallResponse("recall_memory", "{}"),
+    toolCallResponse("recall_memory", "{}"),
+    toolCallResponse("recall_memory", "{}"),
+    chatResponse(),
+  ]);
+
+  const result = await harness.invoke({
+    action: "chat",
+    params: {
+      messages: [{ role: "user", content: "loop" }],
+      tools: [
+        {
+          name: "recall_memory",
+          plugin: "memory-store",
+          action: "recall",
+          adminOnly: false,
+        },
+      ],
+      executeTools: true,
+      maxToolRounds: 2,
+    },
+    context: {
+      actor: { id: "ai-bot", admin: true, roles: ["admin"] },
+      scene: { type: "group", id: "g1" },
+      traceId: "trace-tool-rounds",
+    },
+  });
+
+  assert.equal(requests.length, 3);
+  assert.equal(result.data.toolTrace.length, 2);
 });
 
 test("llm-bridge supports user-defined custom providers", async (t) => {

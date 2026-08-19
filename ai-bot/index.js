@@ -3,6 +3,7 @@ import {
   loadPluginConfig,
   savePluginConfig,
 } from "./lib/config.js";
+import { createHistoryStore } from "./lib/history.js";
 import { createPluginLogger } from "./lib/logger.js";
 
 function generateTraceId() {
@@ -15,6 +16,11 @@ export default class AiBotPlugin {
     this.disposed = false;
     this.config = await loadPluginConfig(ctx);
     this.log = await createPluginLogger(ctx);
+    this.history = createHistoryStore({
+      dataDir: ctx.dataDir,
+      maxEntries: this.config.historyMaxEntries || 20,
+      maxAgeMs: this.config.historyMaxAgeMs || 3600000,
+    });
     this.cooldowns = new Map();
     this.seenGroups = new Set();
     this.periodicTimer = null;
@@ -205,8 +211,7 @@ export default class AiBotPlugin {
       await this.observeMemory(motivation, traceId);
       return;
     }
-    const memory = await this.recallMemory(motivation, traceId);
-    await this.replyFromMotivation(motivation, config, traceId, memory);
+    await this.replyFromMotivation(motivation, config, traceId);
   }
 
   async observeMemory(motivation, traceId) {
@@ -241,7 +246,17 @@ export default class AiBotPlugin {
 
   async recallMemory(motivation, traceId) {
     const config = await loadPluginConfig(this.ctx);
-    if (!config.curiosityMemoryEnabled || !this.hasPlugin("memory-store")) {
+    const scene = motivation?.payload?.event
+      ? this.eventScene(motivation.payload.event)
+      : { type: "group", id: String(motivation?.groupId || "") };
+    return this.recallMemoryForScene(scene, null, config, traceId);
+  }
+
+  async recallMemoryForScene(scene, query, config, traceId) {
+    if (
+      !config.curiosityMemoryEnabled ||
+      !this.hasPlugin("memory-store")
+    ) {
       return null;
     }
     try {
@@ -249,15 +264,16 @@ export default class AiBotPlugin {
         action: "recall",
         params: {
           sceneType: "group",
-          sceneId: motivation.groupId || "",
-          groupId: motivation.groupId || "",
+          sceneId: scene?.id || "",
+          groupId: scene?.id || "",
+          query,
           limit: config.memoryRecallLimit || 10,
         },
         context: {
           actor: this.botActor(),
           scene: {
-            type: "group",
-            id: String(motivation.groupId || ""),
+            type: scene?.type || "group",
+            id: String(scene?.id || ""),
           },
           traceId,
         },
@@ -312,10 +328,66 @@ export default class AiBotPlugin {
     };
   }
 
-  async replyFromMotivation(motivation, config, traceId, memory) {
-    const event = motivation.payload?.event || {};
-    const text = this.extractText(event);
-    const messages = [{ role: "system", content: config.systemPrompt || "" }];
+  async replyFromMotivation(motivation, config, traceId) {
+    let event = motivation?.payload?.event || {};
+    if (!event.message_type && motivation?.groupId) {
+      event = {
+        ...event,
+        message_type: "group",
+        group_id: String(motivation.groupId),
+      };
+    }
+    return this.generateAndSendReply(
+      event,
+      config,
+      traceId,
+      motivation?.type || "curiosity",
+    );
+  }
+
+  buildEventContext(event) {
+    const segments = Array.isArray(event.message) ? event.message : [];
+    const replySegment = segments.find((segment) => segment?.type === "reply");
+    const atSegment = segments.find((segment) => segment?.type === "at");
+    return {
+      message_type: event.message_type || null,
+      group_id: event.group_id ? String(event.group_id) : null,
+      group_name:
+        event.raw?.group_name || event.group_name || null,
+      user_id: event.user_id ? String(event.user_id) : null,
+      nickname: event.sender?.nickname || event.sender?.card || "",
+      card: event.sender?.card || "",
+      role:
+        event.sender?.role ||
+        event.actor?.roles?.[0] ||
+        "member",
+      reply_to: replySegment?.data?.id
+        ? String(replySegment.data.id)
+        : null,
+      at_bot: Boolean(atSegment),
+      time: event.timestamp
+        ? Number(event.timestamp)
+        : Math.floor(Date.now() / 1000),
+    };
+  }
+
+  async buildReplyContext(event, config, traceId) {
+    const scene = this.eventScene(event);
+    const sceneKey = `${scene.type}:${scene.id}`;
+    const query = this.extractText(event);
+    const memory = await this.recallMemoryForScene(
+      scene,
+      query,
+      config,
+      traceId,
+    );
+    const history = await this.history.list(sceneKey, {
+      maxEntries: config.historyMaxEntries || 20,
+      maxAgeMs: config.historyMaxAgeMs || 3600000,
+    });
+    const messages = [
+      { role: "system", content: config.systemPrompt || "" },
+    ];
     if (memory) {
       messages.push({
         role: "system",
@@ -326,48 +398,192 @@ export default class AiBotPlugin {
       });
     }
     messages.push({
+      role: "system",
+      content: `当前事件上下文：\n${JSON.stringify(
+        this.buildEventContext(event),
+      )}`,
+    });
+    for (const entry of history) {
+      const role =
+        entry.role === "bot" || entry.userId === "bot"
+          ? "assistant"
+          : "user";
+      const content = entry.nickname
+        ? `${entry.nickname}: ${entry.text}`
+        : String(entry.text || "");
+      if (content) messages.push({ role, content });
+    }
+    messages.push({
       role: "user",
-      content: text || "请根据当前群聊动态给出一个简短自然的回应。",
+      content: query || "请根据当前群聊动态给出一个简短自然的回应。",
+    });
+    return {
+      messages,
+      scene,
+      sceneKey,
+      memoryCount: Array.isArray(memory)
+        ? memory.length
+        : memory
+          ? 1
+          : 0,
+      historyCount: history.length,
+      eventContext: this.buildEventContext(event),
+    };
+  }
+
+  async appendHistory(scene, entry, config) {
+    await this.history.append(
+      {
+        scene: {
+          type: scene.type,
+          id: String(scene.id),
+        },
+        ...entry,
+      },
+      {
+        maxEntries: config.historyMaxEntries || 20,
+        maxAgeMs: config.historyMaxAgeMs || 3600000,
+      },
+    );
+  }
+
+  buildReplySegments(event, text, config) {
+    const segments = [];
+    if (event.message_type === "group") {
+      const replySegment = Array.isArray(event.message)
+        ? event.message.find((segment) => segment?.type === "reply")
+        : null;
+      if (
+        config.replyWithQuote !== false &&
+        replySegment?.data?.id
+      ) {
+        segments.push({
+          type: "reply",
+          data: { id: String(replySegment.data.id) },
+        });
+      }
+      if (config.replyWithAt !== false && event.user_id) {
+        segments.push({
+          type: "at",
+          data: { qq: String(event.user_id) },
+        });
+      }
+    }
+    segments.push({ type: "text", data: { text } });
+    return segments;
+  }
+
+  async generateAndSendReply(event, config, traceId, source = "message") {
+    const context = await this.buildReplyContext(event, config, traceId);
+    if (event.user_id) {
+      await this.appendHistory(
+        context.scene,
+        {
+          userId: String(event.user_id),
+          nickname: String(
+            event.sender?.nickname ||
+              event.sender?.card ||
+              event.user_id ||
+              "用户",
+          ),
+          role: String(event.sender?.role || "member"),
+          text: this.extractText(event),
+        },
+        config,
+      );
+    }
+    this.log.info("ai", "context assembled", {
+      traceId,
+      sceneType: context.scene.type,
+      sceneId: String(context.scene.id),
+      source,
+      memoryCount: context.memoryCount,
+      historyCount: context.historyCount,
     });
     const llmResult = await this.ctx.registry.invoke("llm-bridge", {
       action: "chat",
       params: {
-        messages,
+        messages: context.messages,
+        tools: config.llmTools || [],
+        executeTools: true,
+        maxToolRounds: config.maxToolRounds || 3,
         temperature: 0.8,
         max_tokens: 512,
         ...(config.llmProvider ? { provider: config.llmProvider } : {}),
         ...(config.llmModel ? { model: config.llmModel } : {}),
       },
       context: {
-        actor: { origin: "system", id: "ai-bot", admin: true, roles: ["admin"] },
-        scene: { type: "group", id: String(motivation.groupId || "") },
+        actor: this.botActor(),
+        scene: context.scene,
         traceId,
       },
     });
     const rawReply =
       llmResult?.data?.choices?.[0]?.message?.content ||
       llmResult?.data?.choices?.[0]?.text ||
+      llmResult?.data?.content ||
       "";
     const reply = String(rawReply || "").trim();
     if (!reply) {
-      this.log.info("ai", "empty curiosity reply", { traceId });
-      return;
+      this.log.info("ai", "empty llm reply", { traceId, source });
+      return null;
     }
     const limited = reply.slice(0, config.maxReplyLength || 2000);
+    const message = this.buildReplySegments(event, limited, config);
+    const action =
+      event.message_type === "group" ? "send_group_msg" : "send_private_msg";
+    const sceneId = event.group_id ?? event.user_id ?? context.scene.id;
+    const params =
+      action === "send_group_msg"
+        ? {
+            group_id: String(event.group_id ?? context.scene.id),
+            message,
+          }
+        : {
+            user_id: String(event.user_id ?? context.scene.id),
+            message,
+          };
     await this.ctx.registry.invoke("action-qq", {
-      action: "send_group_msg",
-      params: {
-        group_id: String(motivation.groupId || ""),
-        message: [{ type: "text", data: { text: limited } }],
+      action,
+      params,
+      context: this.actionContext(
+        event.message_type || context.scene.type,
+        sceneId,
+        traceId,
+      ),
+    });
+    await this.appendHistory(
+      context.scene,
+      {
+        userId: "bot",
+        nickname: "Bot",
+        role: "bot",
+        text: limited,
       },
-      context: this.actionContext("group", motivation.groupId || "", traceId),
-    });
-    this.log.info("ai", "curiosity reply sent", {
+      config,
+    );
+    const now = Date.now();
+    this.cooldowns.set(
+      context.sceneKey,
+      now + (config.cooldownSeconds || 0) * 1000,
+    );
+    this.log.info("ai", "reply sent", {
       traceId,
-      groupId: motivation.groupId || null,
-      type: motivation.type || null,
+      sceneType: context.scene.type,
+      sceneId: String(context.scene.id),
+      source,
       length: limited.length,
+      toolRounds: Array.isArray(llmResult?.data?.toolTrace)
+        ? llmResult.data.toolTrace.length
+        : 0,
     });
+    return {
+      reply: limited,
+      message,
+      context,
+      traceId,
+      toolTrace: llmResult?.data?.toolTrace || [],
+    };
   }
 
   async schedulePeriodicProbe() {
@@ -426,10 +642,8 @@ export default class AiBotPlugin {
   }
 
   async replyToMessage(event, config, traceId) {
-    const sceneKey =
-      event.message_type === "group"
-        ? `group:${event.group_id}`
-        : `private:${event.user_id}`;
+    const scene = this.eventScene(event);
+    const sceneKey = `${scene.type}:${scene.id}`;
     const now = Date.now();
     const cooldownMs = (config.cooldownSeconds || 0) * 1000;
     const nextAllowedAt = this.cooldowns.get(sceneKey) || 0;
@@ -437,60 +651,7 @@ export default class AiBotPlugin {
 
     const text = this.extractText(event);
     if (!text) return;
-    const llmResult = await this.ctx.registry.invoke("llm-bridge", {
-      action: "chat",
-      params: {
-        messages: [
-          { role: "system", content: config.systemPrompt || "" },
-          { role: "user", content: text },
-        ],
-        temperature: 0.8,
-        max_tokens: 512,
-        ...(config.llmProvider ? { provider: config.llmProvider } : {}),
-        ...(config.llmModel ? { model: config.llmModel } : {}),
-      },
-      context: {
-        actor: this.eventActor(event),
-        scene: this.eventScene(event),
-        traceId,
-      },
-    });
-    const rawReply =
-      llmResult?.data?.choices?.[0]?.message?.content ||
-      llmResult?.data?.choices?.[0]?.text ||
-      "";
-    const reply = String(rawReply || "").trim();
-    if (!reply) {
-      this.log.info("ai", "empty llm reply", { traceId });
-      return;
-    }
-    const limited = reply.slice(0, config.maxReplyLength || 2000);
-    const action =
-      event.message_type === "group" ? "send_group_msg" : "send_private_msg";
-    const params =
-      event.message_type === "group"
-        ? {
-            group_id: String(event.group_id),
-            message: [{ type: "text", data: { text: limited } }],
-          }
-        : {
-            user_id: String(event.user_id),
-            message: [{ type: "text", data: { text: limited } }],
-          };
-    const sceneId =
-      event.message_type === "group" ? event.group_id : event.user_id;
-    await this.ctx.registry.invoke("action-qq", {
-      action,
-      params,
-      context: this.actionContext(event.message_type, sceneId, traceId),
-    });
-    this.cooldowns.set(sceneKey, now + cooldownMs);
-    this.log.info("ai", "reply sent", {
-      traceId,
-      sceneType: event.message_type,
-      sceneId: String(sceneId),
-      length: limited.length,
-    });
+    await this.generateAndSendReply(event, config, traceId, "message");
   }
 
   async tryHandlePrivateCommand(event, config, traceId) {

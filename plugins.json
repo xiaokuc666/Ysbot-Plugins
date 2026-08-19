@@ -38,24 +38,24 @@
     {
       "id": "llm-bridge",
       "name": "LLM Bridge",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "type": "capability",
       "description": "Unified LLM provider bridge for chat and completion",
       "adminConsole": true,
-      "file": "llm-bridge/dist/llm-bridge-0.1.0.plg",
-      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/llm-bridge/dist/llm-bridge-0.1.0.plg",
-      "sha256": "a9b00dfe2c5cf53544527dc2c7c782bd2f3f705745ba36c96ae3a3398beac8f0"
+      "file": "llm-bridge/dist/llm-bridge-0.2.0.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/llm-bridge/dist/llm-bridge-0.2.0.plg",
+      "sha256": "db733d03214793f2e3c9393ebd6f244a0ce6e9d7121832bbee8836e58164f410"
     },
     {
       "id": "ai-bot",
       "name": "AI Bot",
-      "version": "0.2.2",
+      "version": "0.3.0",
       "type": "capability",
       "description": "QQ AI chat bot business plugin",
       "adminConsole": true,
-      "file": "ai-bot/dist/ai-bot-0.2.2.plg",
-      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/ai-bot/dist/ai-bot-0.2.2.plg",
-      "sha256": "18cf310cfb19baf7d3fc05112841c252b2edcc053103e3c7283b2bffde8d7f12"
+      "file": "ai-bot/dist/ai-bot-0.3.0.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/ai-bot/dist/ai-bot-0.3.0.plg",
+      "sha256": "bda39d131a3ce056dc2488245830fc4a44f1627f48749fa72ed4e58530f964b8"
     },
     {
       "id": "memory-store",

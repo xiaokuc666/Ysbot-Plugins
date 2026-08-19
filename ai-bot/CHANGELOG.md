@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+- 直接回复和好奇心回复统一为同一套上下文组装管线。
+- 回复前注入近期记忆、短期会话历史、当前事件上下文。
+- 新增 `history.jsonl` 短期会话历史，按群/私聊隔离并自动清理。
+- 支持把 admin-console 配置的 `llmTools` 传给 llm-bridge 并执行。
+- 群内回复支持带 `reply` 引用和 `at` 消息段。
+- 日志记录记忆条数、历史条数、工具调用轮数和 traceId。
+
 ## 0.2.2
 
 - 修复 memory-store recall 返回数组时误取 `Array.prototype.entries` 导致回复链路崩溃的问题。

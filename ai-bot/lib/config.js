@@ -30,6 +30,12 @@ export const CONFIG_SCHEMA = {
     curiosityRandomReplyProbability: { type: "number", default: 0.05 },
     memoryRecallLimit: { type: "integer", default: 10 },
     memoryMaxInjection: { type: "integer", default: 2000 },
+    historyMaxEntries: { type: "integer", default: 20 },
+    historyMaxAgeMs: { type: "integer", default: 3600000 },
+    llmTools: { type: "array", default: [] },
+    maxToolRounds: { type: "integer", default: 3 },
+    replyWithAt: { type: "boolean", default: true },
+    replyWithQuote: { type: "boolean", default: true },
   },
 };
 

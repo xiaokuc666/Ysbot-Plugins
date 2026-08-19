@@ -93,7 +93,9 @@ await ctx.registry.invoke("llm-bridge", {
 | `temperature` | 否 | 采样温度 |
 | `max_tokens` | 否 | 最大 token 数 |
 | `timeoutMs` | 否 | 单次请求超时 |
-| `tools` | 否 | tool-call 定义，v0.1 只透传不执行 |
+| `tools` | 否 | 自定义工具注册或 OpenAI tool 定义 |
+| `executeTools` | 否 | 设为 `true` 时真正执行 tool_calls |
+| `maxToolRounds` | 否 | 工具执行最大轮数，默认取配置 |
 | `tool_choice` | 否 | tool-call 选择策略 |
 
 `completion`：
@@ -120,7 +122,8 @@ await ctx.registry.invoke("llm-bridge", {
   "data": {
     "choices": [],
     "toolCalls": null,
-    "executedTools": false
+    "executedTools": false,
+    "toolTrace": []
   },
   "traceId": "trace-xxx"
 }
@@ -130,7 +133,32 @@ await ctx.registry.invoke("llm-bridge", {
 
 ## Tool Call
 
-v0.1 支持把 `tools` / `tool_choice` 透传给 Provider，并把返回的 `message.tool_calls` 放到 `data.toolCalls`。当前不会执行工具，`data.executedTools` 固定为 `false`。
+`executeTools: false` 时保持透传行为：把 `tools` / `tool_choice` 透传给 Provider，并把返回的 `message.tool_calls` 放到 `data.toolCalls`。
+
+`executeTools: true` 时会执行工具：
+
+```js
+await ctx.registry.invoke("llm-bridge", {
+  action: "chat",
+  params: {
+    messages,
+    tools: [
+      {
+        name: "recall_memory",
+        description: "召回记忆",
+        plugin: "memory-store",
+        action: "recall",
+        adminOnly: false
+      }
+    ],
+    executeTools: true,
+    maxToolRounds: 3
+  },
+  context: { actor, scene, traceId }
+});
+```
+
+执行结果会作为 `role=tool` 消息回传给 LLM，最终返回包含 `data.toolTrace`。未注册工具、权限不足和工具执行失败都会作为错误结果回传，不中断对话。
 
 ## 后台测试
 
@@ -148,6 +176,9 @@ REQUEST_TIMEOUT
 CONNECTION_LOST
 PROVIDER_ERROR
 INVALID_RESPONSE
+TOOL_NOT_REGISTERED
+TOOL_PERMISSION_DENIED
+TOOL_EXECUTION_FAILED
 DISPOSED
 INTERNAL
 ```

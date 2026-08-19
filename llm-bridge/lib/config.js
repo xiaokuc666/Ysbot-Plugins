@@ -37,6 +37,8 @@ export const CONFIG_SCHEMA = {
     defaultModel: { type: "string", default: "" },
     timeoutMs: { type: "integer", default: 30000 },
     allowTools: { type: "boolean", default: true },
+    allowToolExecution: { type: "boolean", default: true },
+    defaultMaxToolRounds: { type: "integer", default: 3 },
     providers: { type: "array", default: DEFAULT_PROVIDERS },
   },
 };

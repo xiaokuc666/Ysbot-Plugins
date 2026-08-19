@@ -40,9 +40,9 @@ async function makeHarness(t, configOverrides = {}) {
   return harness;
 }
 
-function installFakes(harness) {
+function installFakes(harness, replyQueue = ["你好，我是 AI Bot"]) {
   const calls = [];
-  const replies = ["你好，我是 AI Bot"];
+  const replies = [...replyQueue];
 
   harness.registry.unregister("llm-bridge");
   harness.registry.register({
@@ -154,6 +154,129 @@ test("group @ message triggers llm and action send", async (t) => {
   const send = calls.find((call) => call.kind === "action");
   assert.equal(send.params.action, "send_group_msg");
   assert.equal(send.params.params.group_id, "100000001");
+});
+
+test("direct reply includes memory, history and event context", async (t) => {
+  const harness = await makeHarness(t, {
+    defaultEnabled: true,
+    defaultReplyMode: "mention",
+    curiosityEnabled: false,
+    curiosityMemoryEnabled: true,
+    llmTools: [
+      {
+        name: "recall_memory",
+        description: "召回记忆",
+        plugin: "memory-store",
+        action: "recall",
+        adminOnly: false,
+      },
+    ],
+  });
+  const calls = installFakes(harness, ["第一条回复", "第二条回复"]);
+  installMemoryStore(harness, calls);
+
+  harness.eventBus.emit("onebot.message", {
+    message_type: "group",
+    group_id: "100000001",
+    user_id: "200000001",
+    sender: { nickname: "Alice", role: "member" },
+    message: [
+      { type: "at", data: { qq: "bot" } },
+      { type: "text", data: { text: "你好" } },
+    ],
+    raw_message: "@bot 你好",
+  });
+  await waitFor(
+    () =>
+      calls.filter(
+        (call) => call.kind === "action" && call.params.action === "send_group_msg",
+      ).length === 1,
+  );
+
+  harness.eventBus.emit("onebot.message", {
+    message_type: "group",
+    group_id: "100000001",
+    user_id: "300000001",
+    sender: { nickname: "Bob", role: "member" },
+    message: [
+      { type: "reply", data: { id: "123" } },
+      { type: "at", data: { qq: "bot" } },
+      { type: "text", data: { text: "在吗" } },
+    ],
+    raw_message: "@bot 在吗",
+  });
+  await waitFor(
+    () =>
+      calls.filter(
+        (call) => call.kind === "action" && call.params.action === "send_group_msg",
+      ).length === 2,
+  );
+
+  const llmCalls = calls.filter((call) => call.kind === "llm");
+  assert.equal(llmCalls.length, 2);
+  const messages = llmCalls[1].params.params.messages;
+  assert.ok(
+    messages.some((message) =>
+      String(message.content || "").includes("近期记忆"),
+    ),
+  );
+  assert.ok(
+    messages.some((message) =>
+      String(message.content || "").includes("Alice: 你好"),
+    ),
+  );
+  assert.ok(
+    messages.some((message) =>
+      String(message.content || "").includes("当前事件上下文"),
+    ),
+  );
+  assert.deepEqual(
+    llmCalls[1].params.params.tools[0],
+    {
+      name: "recall_memory",
+      description: "召回记忆",
+      plugin: "memory-store",
+      action: "recall",
+      adminOnly: false,
+    },
+  );
+  assert.equal(llmCalls[1].params.params.executeTools, true);
+
+  const secondSend = calls.filter(
+    (call) => call.kind === "action" && call.params.action === "send_group_msg",
+  )[1];
+  assert.equal(secondSend.params.params.message[0].type, "reply");
+  assert.equal(secondSend.params.params.message[1].type, "at");
+  assert.equal(secondSend.params.params.message[2].type, "text");
+});
+
+test("history store writes lists and clears scenes", async (t) => {
+  const harness = await makeHarness(t);
+  const history = harness.registry.get("ai-bot").instance.history;
+
+  await history.append(
+    {
+      scene: { type: "group", id: "100000001" },
+      userId: "200000001",
+      nickname: "Alice",
+      role: "member",
+      text: "晚上好",
+    },
+    { maxEntries: 20, maxAgeMs: 3600000 },
+  );
+  let entries = await history.list("group:100000001", {
+    maxEntries: 20,
+    maxAgeMs: 3600000,
+  });
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].text, "晚上好");
+
+  await history.clear("group:100000001");
+  entries = await history.list("group:100000001", {
+    maxEntries: 20,
+    maxAgeMs: 3600000,
+  });
+  assert.equal(entries.length, 0);
 });
 
 test("mention mode ignores normal group message", async (t) => {
@@ -314,6 +437,13 @@ test("curiosity direct reply accepts real memory-store recall array", async (t) 
     ),
   );
   assert.ok(calls.some((call) => call.kind === "llm"));
+  const llmCall = calls.find((call) => call.kind === "llm");
+  assert.equal(llmCall.params.params.executeTools, true);
+  assert.ok(
+    llmCall.params.params.messages.some((message) =>
+      String(message.content || "").includes("当前事件上下文"),
+    ),
+  );
 });
 
 test("curiosity observe without event does not crash", async (t) => {

@@ -5,7 +5,7 @@
 - ID: `llm-bridge`
 - Type: `capability`
 - Role: `capability`
-- Version: `0.1.0`
+- Version: `0.2.0`
 - 依赖: `@xiaokuc/ysbot >= 0.2.5`
 
 ## 功能
@@ -17,7 +17,8 @@
 - 支持 `chat` 和 `completion`
 - API Key 统一保存在 `providerApiKeys` secret
 - 支持 `model`、`temperature`、`max_tokens`、`timeout`
-- 支持 tool-call 请求透传，v0.1 不执行工具
+- 支持 tool-call 请求透传，也支持 `executeTools: true` 真正执行工具
+- 支持自定义工具注册：`name/plugin/action/adminOnly`
 - 参数配置页提供“测试当前 Provider”按钮，可验证 API 是否可用
 - 日志带 `traceId`
 
@@ -33,6 +34,8 @@
 | `defaultModel` | 空 | 全局默认模型 |
 | `timeoutMs` | `30000` | 请求超时 |
 | `allowTools` | `true` | 是否允许 tool-call 透传 |
+| `allowToolExecution` | `true` | 是否允许执行 tool_calls |
+| `defaultMaxToolRounds` | `3` | 默认最大工具轮数 |
 | `providers` | 内置三个示例 | Provider 注册表 |
 
 Provider 示例：
@@ -93,6 +96,33 @@ const result = await ctx.registry.invoke("llm-bridge", {
   }
 });
 ```
+
+## 工具执行
+
+调用方传入自定义工具定义并开启 `executeTools`：
+
+```js
+const result = await ctx.registry.invoke("llm-bridge", {
+  action: "chat",
+  params: {
+    messages,
+    tools: [
+      {
+        name: "recall_memory",
+        description: "召回 bot 对群或用户的记忆",
+        plugin: "memory-store",
+        action: "recall",
+        adminOnly: false
+      }
+    ],
+    executeTools: true,
+    maxToolRounds: 3
+  },
+  context: { actor, scene, traceId }
+});
+```
+
+最终返回会包含 `data.toolTrace`，工具执行失败会作为 tool 结果回传，不中断对话。
 
 ## 后台测试
 

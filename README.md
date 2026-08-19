@@ -25,29 +25,34 @@ node tools/ysbot.js pack
 | [admin-console](admin-console) | 1.0.3 | YSbot 插件管理后台 |
 | [protocol-onebot](protocol-onebot) | 1.0.1 | 通用 OneBot v11 协议插件 |
 | [action-qq](action-qq) | 1.0.1 | 通用 QQ 动作插件 |
-| [llm-bridge](llm-bridge) | 0.1.0 | 统一大模型接入层 |
-| [ai-bot](ai-bot) | 0.2.2 | QQ AI 聊天机器人业务插件 |
+| [llm-bridge](llm-bridge) | 0.2.0 | 统一大模型接入层 |
+| [ai-bot](ai-bot) | 0.3.0 | QQ AI 聊天机器人业务插件 |
 | [memory-store](memory-store) | 1.0.0 | QQ AI bot 长期记忆系统 |
 
 ## 当前能力
 
-### llm-bridge 0.1.0
+### llm-bridge 0.2.0
 
 - 通过用户自定义 Provider 注册表接入任意 OpenAI-compatible API。
 - 支持 Ollama 原生 `/api/chat` 和 `/api/generate`。
 - 提供 `chat` 和 `completion` 统一调用入口。
 - API Key 统一保存到 `providerApiKeys` secret，支持 JSON 对象或直接填默认 Provider 的明文 Key。
 - 支持 model、temperature、max_tokens、timeout 和 tool-call 透传。
+- 支持 `executeTools: true` 真正执行 tool_calls，并返回 `toolTrace`。
 - 后台配置页提供 `测试当前 Provider` 按钮。
 - 配置修改后立即生效，日志带 traceId。
 
-### ai-bot 0.2.2
+### ai-bot 0.3.0
 
 - 监听 QQ 群聊和私聊事件。
 - 支持 @、回复和普通消息回复策略。
 - 支持每群启用/禁用。
 - 接入 Core CuriosityBus，支持直接互动、群活跃观察和定时群探针。
 - 支持 memory-store 观察/回忆联动，插件未安装时自动跳过。
+- 直接回复和好奇心回复共用统一上下文管线。
+- 回复前注入近期记忆、短期会话历史和当前事件上下文。
+- 支持执行 admin-console 配置的 LLM 工具。
+- 群内回复支持引用原消息和 @ 对方。
 - 支持管理员记忆指令：查看、写笔记、清空。
 - 通过 `llm-bridge` 生成回复，通过 `action-qq` 发送回复。
 - 支持管理员私聊指令。
