@@ -19,5 +19,9 @@ test("admin-console.json declares ai-bot config", async () => {
     config.config.schema.properties.curiosityEnabled.type,
     "boolean",
   );
+  assert.equal(
+    config.config.schema.properties.memoryRecallLimit.default,
+    10,
+  );
   assert.equal(config.pages.length, 0);
 });

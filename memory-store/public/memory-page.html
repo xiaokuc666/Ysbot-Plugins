@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/api/admin-console/design-tokens.css">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--ysbot-bg);
+      color: var(--ysbot-text);
+      font-family: var(--ysbot-font);
+    }
+    h1 {
+      margin: 0 0 16px;
+      font-size: 20px;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    input, textarea, select, button {
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius);
+      background: var(--ysbot-surface);
+      color: var(--ysbot-text);
+      padding: 7px 10px;
+      font: inherit;
+    }
+    button.primary {
+      background: var(--ysbot-primary);
+      color: #fff;
+      border-color: var(--ysbot-primary);
+    }
+    button.danger {
+      color: var(--ysbot-danger);
+      border-color: var(--ysbot-danger);
+    }
+    .status {
+      min-height: 22px;
+      margin-bottom: 8px;
+      color: var(--ysbot-muted);
+    }
+    .status.ok { color: #15803d; }
+    .status.error { color: var(--ysbot-danger); }
+    .entry {
+      margin-bottom: 8px;
+      padding: 10px;
+      border: 1px solid var(--ysbot-border);
+      border-radius: var(--ysbot-radius);
+      background: var(--ysbot-surface);
+    }
+    .entry-head {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--ysbot-muted);
+      margin-bottom: 6px;
+    }
+    .entry-content {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      line-height: 1.5;
+    }
+    .entry-actions {
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>记忆管理</h1>
+  <div class="toolbar">
+    <input id="groupId" placeholder="群号">
+    <input id="userId" placeholder="QQ">
+    <input id="query" placeholder="关键词">
+    <button id="refresh" class="primary">查询</button>
+  </div>
+  <div class="toolbar">
+    <input id="noteGroupId" placeholder="笔记群号">
+    <input id="noteUserId" placeholder="笔记 QQ（可选）">
+    <textarea id="noteContent" rows="2" placeholder="笔记内容"></textarea>
+    <button id="note">写笔记</button>
+    <button id="clear" class="danger">清空当前群</button>
+  </div>
+  <div id="status" class="status"></div>
+  <div id="entries"></div>
+
+  <script>
+    const token = window.__YSBOT_ADMIN_TOKEN__ || "";
+    const base = "/api/plugins/memory-store/admin/memory";
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...(options.headers || {})
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "request failed");
+      return data;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function setStatus(message, type = "") {
+      const node = document.querySelector("#status");
+      node.textContent = message || "";
+      node.className = `status ${type}`;
+    }
+
+    function render(entries) {
+      const root = document.querySelector("#entries");
+      root.textContent = "";
+      if (!entries.length) {
+        root.innerHTML = '<div class="status">暂无记忆</div>';
+        return;
+      }
+      for (const entry of entries) {
+        const card = document.createElement("div");
+        card.className = "entry";
+        const head = document.createElement("div");
+        head.className = "entry-head";
+        head.innerHTML = `
+          <span>${escapeHtml(entry.type)}</span>
+          <span>群 ${escapeHtml(entry.groupId || "-")}</span>
+          <span>QQ ${escapeHtml(entry.userId || "-")}</span>
+          <span>${escapeHtml(entry.ts)}</span>
+          <span>${escapeHtml(entry.source || "")}</span>
+        `;
+        const content = document.createElement("div");
+        content.className = "entry-content";
+        content.textContent = entry.content || "";
+        const actions = document.createElement("div");
+        actions.className = "entry-actions";
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "danger";
+        deleteButton.textContent = "删除";
+        deleteButton.addEventListener("click", async () => {
+          try {
+            await api(`${base}/delete`, {
+              method: "POST",
+              body: JSON.stringify({ id: entry.id })
+            });
+            setStatus("已删除", "ok");
+            load();
+          } catch (error) {
+            setStatus(error.message, "error");
+          }
+        });
+        actions.appendChild(deleteButton);
+        card.append(head, content, actions);
+        root.appendChild(card);
+      }
+    }
+
+    async function load() {
+      try {
+        const params = new URLSearchParams();
+        const groupId = document.querySelector("#groupId").value.trim();
+        const userId = document.querySelector("#userId").value.trim();
+        const query = document.querySelector("#query").value.trim();
+        if (groupId) params.set("groupId", groupId);
+        if (userId) params.set("userId", userId);
+        if (query) params.set("query", query);
+        const data = await api(`${base}.json?${params.toString()}`);
+        render(data.entries || []);
+        setStatus(`共 ${data.total || 0} 条`, "ok");
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+    }
+
+    async function addNote() {
+      try {
+        const groupId = document.querySelector("#noteGroupId").value.trim();
+        const userId = document.querySelector("#noteUserId").value.trim();
+        const content = document.querySelector("#noteContent").value.trim();
+        if (!content) throw new Error("笔记内容不能为空");
+        await api(`${base}/note`, {
+          method: "POST",
+          body: JSON.stringify({ groupId, userId, content })
+        });
+        document.querySelector("#noteContent").value = "";
+        setStatus("笔记已写入", "ok");
+        load();
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+    }
+
+    async function clearGroup() {
+      const groupId = document.querySelector("#groupId").value.trim();
+      if (!groupId) {
+        setStatus("请先填写群号", "error");
+        return;
+      }
+      if (!window.confirm(`确认清空群 ${groupId} 的记忆？`)) return;
+      try {
+        await api(`${base}/clear`, {
+          method: "POST",
+          body: JSON.stringify({ groupId })
+        });
+        setStatus("已清空", "ok");
+        load();
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+    }
+
+    document.querySelector("#refresh").addEventListener("click", load);
+    document.querySelector("#note").addEventListener("click", addNote);
+    document.querySelector("#clear").addEventListener("click", clearGroup);
+    load();
+  </script>
+</body>
+</html>

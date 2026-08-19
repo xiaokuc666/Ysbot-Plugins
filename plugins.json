@@ -49,13 +49,24 @@
     {
       "id": "ai-bot",
       "name": "AI Bot",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "type": "capability",
       "description": "QQ AI chat bot business plugin",
       "adminConsole": true,
-      "file": "ai-bot/dist/ai-bot-0.2.0.plg",
-      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/ai-bot/dist/ai-bot-0.2.0.plg",
-      "sha256": "70ddbbf1af20b5dbc99b6492c74d109dbfaccdedd64f1eb69af9acf3a7c0fa71"
+      "file": "ai-bot/dist/ai-bot-0.2.1.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/ai-bot/dist/ai-bot-0.2.1.plg",
+      "sha256": "9b0222dd0f2c4523ecaad35ccfb261004cdbad050122eed067c08a6913845d68"
+    },
+    {
+      "id": "memory-store",
+      "name": "Memory Store",
+      "version": "0.1.0",
+      "type": "capability",
+      "description": "Long-term QQ AI bot memory store",
+      "adminConsole": true,
+      "file": "memory-store/dist/memory-store-0.1.0.plg",
+      "download": "https://raw.githubusercontent.com/xiaokuc666/Ysbot-Plugins/main/memory-store/dist/memory-store-0.1.0.plg",
+      "sha256": "5e7314fb3caa6749426c21be9c1a2f0811bb6d6294a0220b8c7976c73236ae3d"
     }
   ]
 }

@@ -222,7 +222,14 @@ export default class AiBotPlugin {
       await this.ctx.registry.invoke("memory-store", {
         action: "observe",
         params: { event: motivation.payload?.event || null },
-        context: { traceId },
+        context: {
+          actor: this.botActor(),
+          scene: {
+            type: "group",
+            id: String(motivation.groupId || ""),
+          },
+          traceId,
+        },
       });
       this.log.info("ai", "memory observe written", { traceId });
     } catch (error) {
@@ -243,9 +250,17 @@ export default class AiBotPlugin {
         params: {
           sceneType: "group",
           sceneId: motivation.groupId || "",
-          limit: 10,
+          groupId: motivation.groupId || "",
+          limit: config.memoryRecallLimit || 10,
         },
-        context: { traceId },
+        context: {
+          actor: this.botActor(),
+          scene: {
+            type: "group",
+            id: String(motivation.groupId || ""),
+          },
+          traceId,
+        },
       });
       return (
         result?.data?.entries ||
@@ -280,6 +295,24 @@ export default class AiBotPlugin {
     return Boolean(plugin && plugin.enabled !== false && plugin.status === "ready");
   }
 
+  botActor() {
+    return {
+      origin: "system",
+      id: "ai-bot",
+      admin: true,
+      roles: ["admin"],
+    };
+  }
+
+  managementActor() {
+    return {
+      origin: "management",
+      id: "management",
+      admin: true,
+      roles: ["admin"],
+    };
+  }
+
   async replyFromMotivation(motivation, config, traceId, memory) {
     const event = motivation.payload?.event || {};
     const text = this.extractText(event);
@@ -287,7 +320,10 @@ export default class AiBotPlugin {
     if (memory) {
       messages.push({
         role: "system",
-        content: `近期记忆：\n${this.formatMemory(memory)}`,
+        content: `近期记忆：\n${this.formatMemory(memory).slice(
+          0,
+          config.memoryMaxInjection || 2000,
+        )}`,
       });
     }
     messages.push({
@@ -482,6 +518,9 @@ export default class AiBotPlugin {
           "/ai mode mention|all",
           "/ai default on|off",
           "/ai prompt <text>",
+          "/ai memory <groupId>",
+          "/ai memory clear <groupId>",
+          "/ai note <groupId> <text>",
         ].join("\n"),
         traceId,
       );
@@ -559,9 +598,89 @@ export default class AiBotPlugin {
       await this.sendPrivateText(userId, "系统提示词已更新", traceId);
       return true;
     }
+    if (command === "memory" || command === "note") {
+      await this.handleMemoryAdminCommand(command, arg, userId, traceId);
+      return true;
+    }
 
     await this.sendPrivateText(userId, "未知指令，输入 /ai help 查看帮助", traceId);
     return true;
+  }
+
+  async handleMemoryAdminCommand(command, arg, userId, traceId) {
+    if (!this.hasPlugin("memory-store")) {
+      await this.sendPrivateText(
+        userId,
+        "memory-store 未安装，无法执行记忆指令。",
+        traceId,
+      );
+      return;
+    }
+    const context = {
+      actor: this.managementActor(),
+      scene: { type: "private", id: String(userId) },
+      traceId,
+    };
+    if (command === "memory" && arg.startsWith("clear ")) {
+      const groupId = arg.slice("clear ".length).trim();
+      if (!groupId) {
+        await this.sendPrivateText(userId, "用法: /ai memory clear <groupId>", traceId);
+        return;
+      }
+      const result = await this.ctx.registry.invoke("memory-store", {
+        action: "clear",
+        params: { groupId },
+        context,
+      });
+      await this.sendPrivateText(
+        userId,
+        `已清空群 ${groupId} 的记忆，删除 ${result.data?.removed || 0} 条。`,
+        traceId,
+      );
+      return;
+    }
+    if (command === "memory") {
+      const groupId = arg.trim();
+      if (!groupId) {
+        await this.sendPrivateText(userId, "用法: /ai memory <groupId>", traceId);
+        return;
+      }
+      const result = await this.ctx.registry.invoke("memory-store", {
+        action: "list",
+        params: { groupId, limit: 20 },
+        context,
+      });
+      const entries = result.data?.entries || [];
+      if (!entries.length) {
+        await this.sendPrivateText(userId, `群 ${groupId} 暂无记忆。`, traceId);
+        return;
+      }
+      const text = entries
+        .slice(0, 10)
+        .map((entry) => `${entry.ts} [${entry.type}] ${entry.content}`)
+        .join("\n");
+      await this.sendPrivateText(
+        userId,
+        `群 ${groupId} 共有 ${result.data?.total || 0} 条，最近：\n${text}`,
+        traceId,
+      );
+      return;
+    }
+    if (command === "note") {
+      const space = arg.indexOf(" ");
+      if (space <= 0) {
+        await this.sendPrivateText(userId, "用法: /ai note <groupId> <text>", traceId);
+        return;
+      }
+      const groupId = arg.slice(0, space).trim();
+      const content = arg.slice(space + 1).trim();
+      await this.ctx.registry.invoke("memory-store", {
+        action: "note",
+        params: { groupId, content },
+        context,
+      });
+      await this.sendPrivateText(userId, `已写入群 ${groupId} 的笔记。`, traceId);
+    }
   }
 
   async sendPrivateText(userId, text, traceId) {

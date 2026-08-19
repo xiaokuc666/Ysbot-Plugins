@@ -100,6 +100,25 @@ function installMemoryStore(harness, calls) {
       if (params.action === "recall") {
         return { ok: true, data: { entries: [{ text: "旧的群聊记忆" }] } };
       }
+      if (params.action === "list") {
+        return {
+          ok: true,
+          data: {
+            entries: [
+              {
+                id: "mem-1",
+                ts: "2026-08-19T00:00:00.000Z",
+                type: "note",
+                content: "测试记忆",
+              },
+            ],
+            total: 1,
+          },
+        };
+      }
+      if (params.action === "clear") {
+        return { ok: true, data: { removed: 2 } };
+      }
       return { ok: true, data: {} };
     },
     async dispose() {},
@@ -300,4 +319,76 @@ test("curiosity cooldown suppresses repeated direct reply", async (t) => {
       call.kind === "action" && call.params.action === "send_group_msg",
   );
   assert.equal(sends.length, 1);
+});
+
+test("admin /ai memory lists memory-store entries", async (t) => {
+  const harness = await makeHarness(t);
+  const calls = installFakes(harness);
+  installMemoryStore(harness, calls);
+
+  harness.eventBus.emit("onebot.message", {
+    message_type: "private",
+    user_id: "300000001",
+    message: [{ type: "text", data: { text: "/ai memory 100000001" } }],
+    raw_message: "/ai memory 100000001",
+  });
+
+  await waitFor(() => calls.some((call) => call.kind === "memory"));
+  assert.ok(calls.some((call) => call.kind === "memory" && call.params.action === "list"));
+  assert.ok(calls.some((call) => call.kind === "action"));
+});
+
+test("admin /ai note writes memory-store note", async (t) => {
+  const harness = await makeHarness(t);
+  const calls = installFakes(harness);
+  installMemoryStore(harness, calls);
+
+  harness.eventBus.emit("onebot.message", {
+    message_type: "private",
+    user_id: "300000001",
+    message: [{ type: "text", data: { text: "/ai note 100000001 管理员笔记" } }],
+    raw_message: "/ai note 100000001 管理员笔记",
+  });
+
+  await waitFor(() => calls.some((call) => call.kind === "memory"));
+  const noteCall = calls.find(
+    (call) => call.kind === "memory" && call.params.action === "note",
+  );
+  assert.ok(noteCall);
+  assert.equal(noteCall.params.params.groupId, "100000001");
+  assert.equal(noteCall.params.params.content, "管理员笔记");
+});
+
+test("admin /ai memory clear clears memory-store", async (t) => {
+  const harness = await makeHarness(t);
+  const calls = installFakes(harness);
+  installMemoryStore(harness, calls);
+
+  harness.eventBus.emit("onebot.message", {
+    message_type: "private",
+    user_id: "300000001",
+    message: [{ type: "text", data: { text: "/ai memory clear 100000001" } }],
+    raw_message: "/ai memory clear 100000001",
+  });
+
+  await waitFor(() => calls.some((call) => call.kind === "memory"));
+  assert.ok(calls.some((call) => call.kind === "memory" && call.params.action === "clear"));
+});
+
+test("admin memory command gives friendly message when memory-store missing", async (t) => {
+  const harness = await makeHarness(t);
+  const calls = installFakes(harness);
+
+  harness.eventBus.emit("onebot.message", {
+    message_type: "private",
+    user_id: "300000001",
+    message: [{ type: "text", data: { text: "/ai memory 100000001" } }],
+    raw_message: "/ai memory 100000001",
+  });
+
+  await waitFor(() => calls.some((call) => call.kind === "action"));
+  const send = calls.find((call) => call.kind === "action");
+  const text = send.params.params.message[0].data.text;
+  assert.match(text, /memory-store 未安装/);
+  assert.equal(calls.some((call) => call.kind === "memory"), false);
 });

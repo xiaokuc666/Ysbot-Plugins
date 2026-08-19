@@ -5,7 +5,7 @@ QQ AI 聊天机器人业务插件，负责接收消息、决定是否回复、�
 - ID: `ai-bot`
 - Type: `capability`
 - Role: `capability`
-- Version: `0.2.0`
+- Version: `0.2.1`
 - 依赖: `protocol-onebot >= 1.0.0`、`action-qq >= 1.0.0`、`llm-bridge >= 0.1.0`
 
 ## 功能
@@ -43,6 +43,8 @@ QQ AI 聊天机器人业务插件，负责接收消息、决定是否回复、�
 | `curiosityPeriodicProbeIntervalMs` | `300000` | 定时探针间隔 |
 | `curiosityPeriodicProbeProbability` | `0.1` | 定时探针参与概率 |
 | `curiosityRandomReplyProbability` | `0.05` | 群活跃随机回复概率 |
+| `memoryRecallLimit` | `10` | 记忆召回条数上限 |
+| `memoryMaxInjection` | `2000` | 记忆注入最大长度 |
 
 ## 好奇心总线
 
@@ -63,6 +65,9 @@ QQ AI 聊天机器人业务插件，负责接收消息、决定是否回复、�
 /ai mode mention|all
 /ai default on|off
 /ai prompt <text>
+/ai memory <groupId>
+/ai memory clear <groupId>
+/ai note <groupId> <text>
 ```
 
 ## 测试

@@ -15,6 +15,8 @@ test("CONFIG_SCHEMA exposes ai-bot defaults", () => {
     CONFIG_SCHEMA.properties.curiosityGroupActiveCooldownMs.default,
     60000,
   );
+  assert.equal(CONFIG_SCHEMA.properties.memoryRecallLimit.default, 10);
+  assert.equal(CONFIG_SCHEMA.properties.memoryMaxInjection.default, 2000);
 });
 
 test("groupEnabled respects explicit disabled and enabled groups", () => {

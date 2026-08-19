@@ -87,9 +87,20 @@ memory-store 未安装时不会报错，会跳过记忆相关调用。
 /ai mode mention|all
 /ai default on|off
 /ai prompt <text>
+/ai memory <groupId>
+/ai memory clear <groupId>
+/ai note <groupId> <text>
 ```
 
 指令通过 `action-qq` 私聊发送响应。
+
+### 记忆指令
+
+- `/ai memory <groupId>`：查看指定群记忆
+- `/ai memory clear <groupId>`：清空指定群记忆
+- `/ai note <groupId> <text>`：向指定群写入管理员笔记
+
+memory-store 未安装时，这些指令会返回友好提示，不会报错。
 
 ## 调用关系
 

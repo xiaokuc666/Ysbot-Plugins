@@ -128,6 +128,20 @@
           "minimum": 0,
           "maximum": 1,
           "title": "群活跃随机回复概率"
+        },
+        "memoryRecallLimit": {
+          "type": "integer",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 100,
+          "title": "记忆召回条数上限"
+        },
+        "memoryMaxInjection": {
+          "type": "integer",
+          "default": 2000,
+          "minimum": 100,
+          "maximum": 100000,
+          "title": "记忆注入最大长度"
         }
       }
     },

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- 新增管理员记忆指令：`/ai memory`、`/ai note`、`/ai memory clear`。
+- memory-store 未安装时给出友好提示。
+- 支持记忆召回数量上限配置。
+
 ## 0.2.0
 
 - 接入 Core CuriosityBus。

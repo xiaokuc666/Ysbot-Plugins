@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "config": {
+    "title": "Memory Store 配置",
+    "groups": [
+      {
+        "id": "general",
+        "title": "通用"
+      }
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "title": "启用记忆"
+        },
+        "maxEntriesPerGroup": {
+          "type": "integer",
+          "default": 500,
+          "minimum": 10,
+          "maximum": 100000,
+          "title": "每群最大记忆数"
+        },
+        "maxEntriesPerUser": {
+          "type": "integer",
+          "default": 200,
+          "minimum": 10,
+          "maximum": 100000,
+          "title": "每用户最大记忆数"
+        },
+        "recallDefaultLimit": {
+          "type": "integer",
+          "default": 20,
+          "minimum": 1,
+          "maximum": 200,
+          "title": "默认召回条数"
+        },
+        "summaryAfterEntries": {
+          "type": "integer",
+          "default": 50,
+          "minimum": 5,
+          "maximum": 10000,
+          "title": "多少条后生成摘要"
+        },
+        "maxMemoryLength": {
+          "type": "integer",
+          "default": 2000,
+          "minimum": 50,
+          "maximum": 100000,
+          "title": "单条记忆最大长度"
+        }
+      }
+    },
+    "secrets": []
+  },
+  "pages": [
+    {
+      "id": "memory",
+      "title": "记忆管理",
+      "entry": "/api/plugins/memory-store/admin/memory",
+      "theme": "shared"
+    }
+  ]
+}

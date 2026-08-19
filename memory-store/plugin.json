@@ -1,16 +1,12 @@
 {
-  "id": "ai-bot",
+  "id": "memory-store",
   "type": "capability",
-  "name": "AI Bot",
-  "version": "0.2.1",
-  "description": "QQ AI chat bot business plugin",
+  "name": "Memory Store",
+  "version": "0.1.0",
+  "description": "Long-term QQ AI bot memory store",
   "enabled": true,
   "role": "capability",
-  "dependencies": [
-    "protocol-onebot",
-    "action-qq",
-    "llm-bridge"
-  ],
+  "dependencies": [],
   "permissions": {
     "adminOnly": false,
     "enabledGroups": []
