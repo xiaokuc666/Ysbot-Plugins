@@ -38,8 +38,16 @@ export const CONFIG_SCHEMA = {
     directAttentionFollowProbability: { type: "number", default: 0.5 },
     llmTools: { type: "array", default: [] },
     maxToolRounds: { type: "integer", default: 3 },
-    replyWithAt: { type: "boolean", default: true },
-    replyWithQuote: { type: "boolean", default: true },
+    replyWithAt: {
+      type: "string",
+      enum: ["auto", "always", "never"],
+      default: "auto",
+    },
+    replyWithQuote: {
+      type: "string",
+      enum: ["auto", "always", "never"],
+      default: "auto",
+    },
   },
 };
 

@@ -293,6 +293,39 @@ test("curiosity keeps short attention window after direct mention", async (t) =>
   assert.equal(followup.motivation.type, "direct_followup");
 });
 
+test("auto reply mode omits at when reply is not addressed", async (t) => {
+  const harness = await makeHarness(t, {
+    defaultEnabled: true,
+    defaultReplyMode: "mention",
+    replyWithAt: "auto",
+    replyWithQuote: "auto",
+  });
+  const calls = installFakes(harness, ["大家好"]);
+
+  harness.eventBus.emit("onebot.message", {
+    message_type: "group",
+    group_id: "100000001",
+    user_id: "200000001",
+    sender: { nickname: "Alice", role: "member" },
+    message: [
+      { type: "at", data: { qq: "bot" } },
+      { type: "text", data: { text: "你好" } },
+    ],
+    raw_message: "@bot 你好",
+  });
+
+  await waitFor(() => calls.some((call) => call.kind === "action"));
+  const send = calls.find((call) => call.kind === "action");
+  assert.equal(
+    send.params.params.message.some((segment) => segment.type === "at"),
+    false,
+  );
+  assert.equal(
+    send.params.params.message.some((segment) => segment.type === "reply"),
+    false,
+  );
+});
+
 test("direct reply includes memory, history and event context", async (t) => {
   const harness = await makeHarness(t, {
     defaultEnabled: true,
@@ -309,7 +342,7 @@ test("direct reply includes memory, history and event context", async (t) => {
       },
     ],
   });
-  const calls = installFakes(harness, ["第一条回复", "第二条回复"]);
+  const calls = installFakes(harness, ["Alice，你好", "Bob，你找我啊"]);
   installMemoryStore(harness, calls);
 
   harness.eventBus.emit("onebot.message", {

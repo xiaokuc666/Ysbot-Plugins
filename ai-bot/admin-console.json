@@ -196,14 +196,16 @@
           "title": "最大工具轮数"
         },
         "replyWithAt": {
-          "type": "boolean",
-          "default": true,
-          "title": "@ 时回复带 @"
+          "type": "string",
+          "enum": ["auto", "always", "never"],
+          "default": "auto",
+          "title": "@ 策略"
         },
         "replyWithQuote": {
-          "type": "boolean",
-          "default": true,
-          "title": "回复时引用原消息"
+          "type": "string",
+          "enum": ["auto", "always", "never"],
+          "default": "auto",
+          "title": "引用策略"
         }
       }
     },

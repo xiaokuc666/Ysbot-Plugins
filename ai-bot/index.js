@@ -27,6 +27,24 @@ function formatTime(date, timeZone = "Asia/Shanghai") {
   }
 }
 
+function eventMessageKey(event = {}) {
+  return String(
+    event._aiBotMessageKey ??
+      event.raw?.message_id ??
+      event.id ??
+      event.message_id ??
+      `${event.message_type}:${event.group_id ?? event.user_id}:${event.user_id}:${event.timestamp ?? Date.now()}:${event.raw_message ?? event.text ?? ""}`,
+  );
+}
+
+function replyMode(value, fallback = "auto") {
+  if (value === false) return "never";
+  if (value === true) return "always";
+  return ["auto", "always", "never"].includes(value)
+    ? value
+    : fallback;
+}
+
 export default class AiBotPlugin {
   async init(ctx) {
     this.ctx = ctx;
@@ -89,6 +107,7 @@ export default class AiBotPlugin {
       );
       if (handled) return;
       if (!config.privateEnabled) return;
+      await this.appendIncomingHistory(event, config);
       await this.replyToMessage(event, config, traceId);
       return;
     }
@@ -101,6 +120,7 @@ export default class AiBotPlugin {
       return;
     }
     if (config.curiosityEnabled && this.ctx.curiosity) {
+      await this.appendIncomingHistory(event, config);
       await this.submitCuriosity(event, config, traceId);
       return;
     }
@@ -110,6 +130,7 @@ export default class AiBotPlugin {
     ) {
       return;
     }
+    await this.appendIncomingHistory(event, config);
     await this.replyToMessage(event, config, traceId);
   }
 
@@ -487,10 +508,16 @@ export default class AiBotPlugin {
       config,
       traceId,
     );
-    const history = await this.history.list(sceneKey, {
-      maxEntries: config.historyMaxEntries || 20,
-      maxAgeMs: config.historyMaxAgeMs || 3600000,
-    });
+    const currentMessageKey = eventMessageKey(event);
+    const history = (
+      await this.history.list(sceneKey, {
+        maxEntries: config.historyMaxEntries || 20,
+        maxAgeMs: config.historyMaxAgeMs || 3600000,
+      })
+    ).filter(
+      (entry) =>
+        !currentMessageKey || entry.messageKey !== currentMessageKey,
+    );
     const messages = [
       {
         role: "system",
@@ -569,22 +596,55 @@ export default class AiBotPlugin {
     );
   }
 
+  async appendIncomingHistory(event, config) {
+    if (!event?.user_id) return;
+    event._aiBotMessageKey =
+      event._aiBotMessageKey || eventMessageKey(event);
+    const scene = this.eventScene(event);
+    await this.appendHistory(
+      scene,
+      {
+        userId: String(event.user_id),
+        nickname: String(
+          event.sender?.nickname ||
+            event.sender?.card ||
+            event.user_id ||
+            "用户",
+        ),
+        role: String(event.sender?.role || "member"),
+        text: this.extractText(event),
+        messageKey: eventMessageKey(event),
+      },
+      config,
+    );
+  }
+
   buildReplySegments(event, text, config) {
     const segments = [];
     if (event.message_type === "group") {
       const replySegment = Array.isArray(event.message)
         ? event.message.find((segment) => segment?.type === "reply")
         : null;
-      if (
-        config.replyWithQuote !== false &&
-        replySegment?.data?.id
-      ) {
+      const quoteMode = replyMode(config.replyWithQuote);
+      const atMode = replyMode(config.replyWithAt);
+      const nickname =
+        event.sender?.nickname || event.sender?.card || "";
+      const directedToUser =
+        (nickname && String(text).includes(nickname)) ||
+        /(?:^|[\s，。！？])(?:你|您)/.test(String(text));
+      const shouldQuote =
+        quoteMode === "always" ||
+        (quoteMode === "auto" && Boolean(replySegment?.data?.id));
+      const shouldAt =
+        atMode === "always" ||
+        (atMode === "auto" && directedToUser);
+      if (shouldQuote && replySegment?.data?.id) {
         segments.push({
           type: "reply",
           data: { id: String(replySegment.data.id) },
         });
       }
-      if (config.replyWithAt !== false && event.user_id) {
+      if (shouldAt && event.user_id) {
         segments.push({
           type: "at",
           data: { qq: String(event.user_id) },
@@ -597,45 +657,28 @@ export default class AiBotPlugin {
 
   async generateAndSendReply(event, config, traceId, source = "message") {
     const context = await this.buildReplyContext(event, config, traceId);
-    if (event.user_id) {
-      await this.appendHistory(
-        context.scene,
-        {
-          userId: String(event.user_id),
-          nickname: String(
-            event.sender?.nickname ||
-              event.sender?.card ||
-              event.user_id ||
-              "用户",
-          ),
-          role: String(event.sender?.role || "member"),
-          text: this.extractText(event),
-        },
-        config,
-      );
-      if (this.hasPlugin("identity-store")) {
-        try {
-          await this.ctx.registry.invoke("identity-store", {
-            action: "journal",
-            params: {
-              scene: context.scene,
-              userId: String(event.user_id),
-              role: String(event.sender?.role || "member"),
-              type: this.isMentioned(event) ? "mention" : "message",
-              summary: this.extractText(event).slice(0, 200),
-              tags: [],
-            },
-            context: {
-              actor: this.botActor(),
-              scene: context.scene,
-              traceId,
-            },
-          });
-        } catch (error) {
-          this.log.warn("ai", `identity journal failed: ${error.message}`, {
+    if (event.user_id && this.hasPlugin("identity-store")) {
+      try {
+        await this.ctx.registry.invoke("identity-store", {
+          action: "journal",
+          params: {
+            scene: context.scene,
+            userId: String(event.user_id),
+            role: String(event.sender?.role || "member"),
+            type: this.isMentioned(event) ? "mention" : "message",
+            summary: this.extractText(event).slice(0, 200),
+            tags: [],
+          },
+          context: {
+            actor: this.botActor(),
+            scene: context.scene,
             traceId,
-          });
-        }
+          },
+        });
+      } catch (error) {
+        this.log.warn("ai", `identity journal failed: ${error.message}`, {
+          traceId,
+        });
       }
     }
     this.log.info("ai", "context assembled", {

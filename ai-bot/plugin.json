@@ -2,7 +2,7 @@
   "id": "ai-bot",
   "type": "capability",
   "name": "AI Bot",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "QQ AI chat bot business plugin",
   "enabled": true,
   "role": "capability",
