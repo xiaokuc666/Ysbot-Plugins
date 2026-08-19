@@ -180,6 +180,8 @@ test("group @ message triggers llm and action send", async (t) => {
   const send = calls.find((call) => call.kind === "action");
   assert.equal(send.params.action, "send_group_msg");
   assert.equal(send.params.params.group_id, "100000001");
+  const llmCall = calls.find((call) => call.kind === "llm");
+  assert.match(llmCall.params.params.messages[0].content, /不要使用括号描述动作、神态、环境/);
 });
 
 test("reply strips speaker prefix before sending", async (t) => {

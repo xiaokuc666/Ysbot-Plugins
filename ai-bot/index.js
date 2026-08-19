@@ -523,7 +523,7 @@ export default class AiBotPlugin {
         role: "system",
         content: `${
           config.systemPrompt || ""
-        }\n\n回复时直接输出你要说的话，不要添加“烟散：”“Bot：”之类的说话人前缀。`,
+        }\n\nQQ群聊回复规则：\n- 回复保持简短，一次最多一到两句。\n- 不要使用括号描述动作、神态、环境。\n- 不要写“（笑）”“（点头）”“（歪头）”之类内容。\n- 直接输出聊天内容。\n\n回复时直接输出你要说的话，不要添加“烟散：”“Bot：”之类的说话人前缀。`,
       },
     ];
     const identity = await this.loadIdentityContext(event, config, traceId);

@@ -5,7 +5,7 @@
 - ID: `identity-store`
 - Type: `capability`
 - Role: `capability`
-- Version: `0.1.0`
+- Version: `0.1.1`
 - 依赖: `@xiaokuc/ysbot >= 0.2.5`
 
 ## 功能

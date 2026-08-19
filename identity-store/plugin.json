@@ -2,7 +2,7 @@
   "id": "identity-store",
   "type": "capability",
   "name": "Identity Store",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AI bot self identity, interaction journal and identity context retrieval",
   "enabled": true,
   "role": "capability",
