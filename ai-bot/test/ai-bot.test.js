@@ -156,6 +156,33 @@ test("group @ message triggers llm and action send", async (t) => {
   assert.equal(send.params.params.group_id, "100000001");
 });
 
+test("reply strips speaker prefix before sending", async (t) => {
+  const harness = await makeHarness(t, {
+    defaultEnabled: true,
+    defaultReplyMode: "mention",
+  });
+  const calls = installFakes(harness, ["烟散：你好呀"]);
+
+  harness.eventBus.emit("onebot.message", {
+    message_type: "group",
+    group_id: "100000001",
+    user_id: "200000001",
+    sender: { role: "member" },
+    message: [
+      { type: "at", data: { qq: "bot" } },
+      { type: "text", data: { text: "你好" } },
+    ],
+    raw_message: "@bot 你好",
+  });
+
+  await waitFor(() => calls.some((call) => call.kind === "action"));
+  const send = calls.find((call) => call.kind === "action");
+  const text = send.params.params.message.find(
+    (segment) => segment.type === "text",
+  ).data.text;
+  assert.equal(text, "你好呀");
+});
+
 test("direct reply includes memory, history and event context", async (t) => {
   const harness = await makeHarness(t, {
     defaultEnabled: true,

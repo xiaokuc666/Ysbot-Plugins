@@ -26,7 +26,7 @@ node tools/ysbot.js pack
 | [protocol-onebot](protocol-onebot) | 1.0.1 | 通用 OneBot v11 协议插件 |
 | [action-qq](action-qq) | 1.0.1 | 通用 QQ 动作插件 |
 | [llm-bridge](llm-bridge) | 0.2.0 | 统一大模型接入层 |
-| [ai-bot](ai-bot) | 0.3.0 | QQ AI 聊天机器人业务插件 |
+| [ai-bot](ai-bot) | 0.3.1 | QQ AI 聊天机器人业务插件 |
 | [memory-store](memory-store) | 1.0.0 | QQ AI bot 长期记忆系统 |
 
 ## 当前能力
@@ -42,7 +42,7 @@ node tools/ysbot.js pack
 - 后台配置页提供 `测试当前 Provider` 按钮。
 - 配置修改后立即生效，日志带 traceId。
 
-### ai-bot 0.3.0
+### ai-bot 0.3.1
 
 - 监听 QQ 群聊和私聊事件。
 - 支持 @、回复和普通消息回复策略。

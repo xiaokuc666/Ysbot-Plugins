@@ -386,7 +386,12 @@ export default class AiBotPlugin {
       maxAgeMs: config.historyMaxAgeMs || 3600000,
     });
     const messages = [
-      { role: "system", content: config.systemPrompt || "" },
+      {
+        role: "system",
+        content: `${
+          config.systemPrompt || ""
+        }\n\n回复时直接输出你要说的话，不要添加“烟散：”“Bot：”之类的说话人前缀。`,
+      },
     ];
     if (memory) {
       messages.push({
@@ -404,13 +409,14 @@ export default class AiBotPlugin {
       )}`,
     });
     for (const entry of history) {
-      const role =
+      const isBot =
         entry.role === "bot" || entry.userId === "bot"
-          ? "assistant"
-          : "user";
-      const content = entry.nickname
-        ? `${entry.nickname}: ${entry.text}`
-        : String(entry.text || "");
+      const role = isBot ? "assistant" : "user";
+      const content = isBot
+        ? String(entry.text || "")
+        : entry.nickname
+          ? `${entry.nickname}: ${entry.text}`
+          : String(entry.text || "");
       if (content) messages.push({ role, content });
     }
     messages.push({
@@ -523,7 +529,10 @@ export default class AiBotPlugin {
       llmResult?.data?.choices?.[0]?.text ||
       llmResult?.data?.content ||
       "";
-    const reply = String(rawReply || "").trim();
+    const reply = String(rawReply || "")
+      .trim()
+      .replace(/^(?:烟散|Bot|AI Bot|我)\s*[:：]\s*/i, "")
+      .trim();
     if (!reply) {
       this.log.info("ai", "empty llm reply", { traceId, source });
       return null;
