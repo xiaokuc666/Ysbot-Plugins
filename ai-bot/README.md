@@ -5,7 +5,7 @@ QQ AI 聊天机器人业务插件，负责接收消息、决定是否回复、�
 - ID: `ai-bot`
 - Type: `capability`
 - Role: `capability`
-- Version: `0.4.0`
+- Version: `0.5.0`
 - 依赖: `protocol-onebot >= 1.0.0`、`action-qq >= 1.0.0`、`llm-bridge >= 0.2.0`
 
 ## 功能
@@ -19,6 +19,7 @@ QQ AI 聊天机器人业务插件，负责接收消息、决定是否回复、�
 - 短期会话历史写入 `ctx.dataDir/history.jsonl`
 - 可选接入 identity-store，注入身份上下文并记录身份交互日志
 - 直接回复和好奇心回复共用统一上下文管线
+- 注入东八区时间观念，支持 @ 后短期注意力窗口
 - 支持执行 admin-console 配置的 LLM 工具
 - 群内回复支持引用原消息和 @ 对方
 - 日志 traceId 贯穿全链路

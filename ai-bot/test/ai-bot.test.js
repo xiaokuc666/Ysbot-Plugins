@@ -248,6 +248,51 @@ test("ai-bot injects identity context and journals messages", async (t) => {
   );
 });
 
+test("curiosity keeps short attention window after direct mention", async (t) => {
+  const harness = await makeHarness(t, {
+    defaultEnabled: true,
+    curiosityEnabled: true,
+    curiosityMemoryEnabled: false,
+    curiosityRandomReplyProbability: 0,
+    curiosityDirectCooldownMs: 1,
+    curiosityGroupActiveCooldownMs: 60000,
+    directAttentionWindowMs: 30000,
+    directAttentionFollowCooldownMs: 1,
+    directAttentionFollowProbability: 1,
+  });
+  const instance = harness.registry.get("ai-bot").instance;
+  const config = await harness.ctx.pluginConfig.get("ai-bot", CONFIG_SCHEMA);
+
+  await instance.submitCuriosity(
+    {
+      message_type: "group",
+      group_id: "100000001",
+      user_id: "200000001",
+      message: [{ type: "at", data: { qq: "bot" } }],
+      raw_message: "@bot",
+    },
+    config,
+    "trace-attention-1",
+  );
+  assert.ok(
+    instance.directAttentionUntil.get("100000001") > Date.now(),
+  );
+
+  const followup = await instance.submitCuriosity(
+    {
+      message_type: "group",
+      group_id: "100000001",
+      user_id: "300000001",
+      message: [{ type: "text", data: { text: "继续聊" } }],
+      raw_message: "继续聊",
+    },
+    config,
+    "trace-attention-2",
+  );
+  assert.ok(followup);
+  assert.equal(followup.motivation.type, "direct_followup");
+});
+
 test("direct reply includes memory, history and event context", async (t) => {
   const harness = await makeHarness(t, {
     defaultEnabled: true,
@@ -320,6 +365,11 @@ test("direct reply includes memory, history and event context", async (t) => {
   assert.ok(
     messages.some((message) =>
       String(message.content || "").includes("当前事件上下文"),
+    ),
+  );
+  assert.ok(
+    messages.some((message) =>
+      String(message.content || "").includes("nowText"),
     ),
   );
   assert.deepEqual(

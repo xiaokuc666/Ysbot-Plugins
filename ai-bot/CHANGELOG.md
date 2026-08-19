@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- 注入东八区时间观念：当前时间、事件时间、时间差会进入 LLM 上下文。
+- 会话历史带时间标签。
+- 被 @ 后开启短期注意力窗口，窗口内后续消息会以更短冷却继续观察。
+- 新增 `timeZone`、`directAttentionWindowMs`、`directAttentionFollowCooldownMs`、`directAttentionFollowProbability` 配置。
+
 ## 0.4.0
 
 - 新增 `identity-store` 可选集成。

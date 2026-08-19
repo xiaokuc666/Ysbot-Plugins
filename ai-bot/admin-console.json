@@ -157,6 +157,32 @@
           "maximum": 86400000,
           "title": "短期历史保留时间"
         },
+        "timeZone": {
+          "type": "string",
+          "default": "Asia/Shanghai",
+          "title": "时区"
+        },
+        "directAttentionWindowMs": {
+          "type": "integer",
+          "default": 30000,
+          "minimum": 0,
+          "maximum": 600000,
+          "title": "@ 后注意力窗口"
+        },
+        "directAttentionFollowCooldownMs": {
+          "type": "integer",
+          "default": 5000,
+          "minimum": 1000,
+          "maximum": 120000,
+          "title": "@ 后关注冷却"
+        },
+        "directAttentionFollowProbability": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0,
+          "maximum": 1,
+          "title": "@ 后关注概率"
+        },
         "llmTools": {
           "type": "array",
           "default": [],

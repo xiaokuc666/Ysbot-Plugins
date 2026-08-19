@@ -10,6 +10,23 @@ function generateTraceId() {
   return `trace-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 }
 
+function formatTime(date, timeZone = "Asia/Shanghai") {
+  try {
+    return new Intl.DateTimeFormat("zh-CN", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).format(date);
+  } catch {
+    return date.toISOString();
+  }
+}
+
 export default class AiBotPlugin {
   async init(ctx) {
     this.ctx = ctx;
@@ -22,6 +39,8 @@ export default class AiBotPlugin {
       maxAgeMs: this.config.historyMaxAgeMs || 3600000,
     });
     this.cooldowns = new Map();
+    this.directAttentionUntil = new Map();
+    this.directAttentionLastFollow = new Map();
     this.seenGroups = new Set();
     this.periodicTimer = null;
     this.unsubscribe = ctx.eventBus.on("onebot.message", (event) => {
@@ -152,17 +171,66 @@ export default class AiBotPlugin {
   }
 
   async submitCuriosity(event, config, traceId) {
+    const groupId = String(event.group_id || "");
     const isDirect = this.isMentioned(event);
-    const type = isDirect ? "direct_interaction" : "group_active";
-    const cooldownMs = isDirect
-      ? config.curiosityDirectCooldownMs
-      : config.curiosityGroupActiveCooldownMs;
-    const shouldAct =
-      isDirect ||
-      Math.random() < Number(config.curiosityRandomReplyProbability || 0);
+    if (isDirect) {
+      this.directAttentionUntil.set(
+        groupId,
+        Date.now() + (config.directAttentionWindowMs || 30000),
+      );
+      return this.submitMotivation({
+        type: "direct_interaction",
+        groupId,
+        cooldownMs: config.curiosityDirectCooldownMs,
+        shouldAct: true,
+        event,
+        traceId,
+      }, config);
+    }
+
+    const now = Date.now();
+    const attentionUntil = this.directAttentionUntil.get(groupId) || 0;
+    if (now < attentionUntil) {
+      const last = this.directAttentionLastFollow.get(groupId) || 0;
+      const followCooldown = Math.max(
+        1000,
+        Number(config.directAttentionFollowCooldownMs) || 5000,
+      );
+      if (now - last >= followCooldown) {
+        this.directAttentionLastFollow.set(groupId, now);
+        const shouldAct =
+          Math.random() <
+          Number(config.directAttentionFollowProbability ?? 0.5);
+        return this.submitMotivation({
+          type: "direct_followup",
+          groupId,
+          cooldownMs: followCooldown,
+          shouldAct,
+          event,
+          traceId,
+        }, config);
+      }
+    }
+
+    return this.submitMotivation({
+      type: "group_active",
+      groupId,
+      cooldownMs: config.curiosityGroupActiveCooldownMs,
+      shouldAct:
+        Math.random() <
+        Number(config.curiosityRandomReplyProbability || 0),
+      event,
+      traceId,
+    }, config);
+  }
+
+  async submitMotivation(
+    { type, groupId, cooldownMs, shouldAct, event, traceId },
+    config,
+  ) {
     const motivation = {
       type,
-      groupId: String(event.group_id),
+      groupId,
       cooldownMs,
       shouldAct,
       payload: { event, traceId },
@@ -345,10 +413,14 @@ export default class AiBotPlugin {
     );
   }
 
-  buildEventContext(event) {
+  buildEventContext(event, config = {}) {
     const segments = Array.isArray(event.message) ? event.message : [];
     const replySegment = segments.find((segment) => segment?.type === "reply");
     const atSegment = segments.find((segment) => segment?.type === "at");
+    const now = new Date();
+    const eventDate = event.timestamp
+      ? new Date(Number(event.timestamp) * 1000)
+      : now;
     return {
       message_type: event.message_type || null,
       group_id: event.group_id ? String(event.group_id) : null,
@@ -367,7 +439,13 @@ export default class AiBotPlugin {
       at_bot: Boolean(atSegment),
       time: event.timestamp
         ? Number(event.timestamp)
-        : Math.floor(Date.now() / 1000),
+        : Math.floor(now.getTime() / 1000),
+      timeText: formatTime(eventDate, config.timeZone),
+      nowText: formatTime(now, config.timeZone),
+      timeAgoSeconds: Math.max(
+        0,
+        Math.floor((now.getTime() - eventDate.getTime()) / 1000),
+      ),
     };
   }
 
@@ -440,18 +518,21 @@ export default class AiBotPlugin {
     messages.push({
       role: "system",
       content: `当前事件上下文：\n${JSON.stringify(
-        this.buildEventContext(event),
+        this.buildEventContext(event, config),
       )}`,
     });
     for (const entry of history) {
       const isBot =
         entry.role === "bot" || entry.userId === "bot"
       const role = isBot ? "assistant" : "user";
+      const timeLabel = entry.ts
+        ? `[${formatTime(new Date(entry.ts), config.timeZone)}] `
+        : "";
       const content = isBot
-        ? String(entry.text || "")
+        ? `${timeLabel}${String(entry.text || "")}`
         : entry.nickname
-          ? `${entry.nickname}: ${entry.text}`
-          : String(entry.text || "");
+          ? `${timeLabel}${entry.nickname}: ${entry.text}`
+          : `${timeLabel}${String(entry.text || "")}`;
       if (content) messages.push({ role, content });
     }
     messages.push({
@@ -468,7 +549,7 @@ export default class AiBotPlugin {
           ? 1
           : 0,
       historyCount: history.length,
-      eventContext: this.buildEventContext(event),
+      eventContext: this.buildEventContext(event, config),
     };
   }
 
@@ -924,6 +1005,8 @@ export default class AiBotPlugin {
 
   async dispose() {
     this.disposed = true;
+    this.directAttentionUntil.clear();
+    this.directAttentionLastFollow.clear();
     if (this.periodicTimer) {
       clearTimeout(this.periodicTimer);
       this.periodicTimer = null;
